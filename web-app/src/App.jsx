@@ -3,16 +3,26 @@ import './index.css';
 
 function App() {
   const [currentView, setCurrentView] = useState('fetcher'); // 'fetcher' or 'analytics'
-  const [activeTab, setActiveTab] = useState('issueId');
-  const [query, setQuery] = useState('');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'issueId');
+  const [query, setQuery] = useState(() => localStorage.getItem('query') || '');
   const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
-  const [theme, setTheme] = useState('dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
 
-  // Apply theme to document
+  // Apply theme and persist to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Persist search preferences
+  useEffect(() => {
+    localStorage.setItem('activeTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem('query', query);
+  }, [query]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
