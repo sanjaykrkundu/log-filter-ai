@@ -257,7 +257,8 @@ function App() {
         backdropFilter: 'blur(12px)'
       }}>
         {/* Left: Logo */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <img src="/logo.jpg" alt="Log Filter AI Logo" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
           <h1 style={{ fontSize: '1.25rem', margin: 0, background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Log Filter AI
           </h1>
@@ -302,14 +303,13 @@ function App() {
           
           {/* Text Size Controller */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(0,0,0,0.05)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.25rem', marginRight: '0.25rem' }}>Size:</span>
             <button className={`nav-tab ${textSize === 'small' ? 'active' : ''}`} onClick={() => setTextSize('small')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.7rem' }}>S</button>
             <button className={`nav-tab ${textSize === 'medium' ? 'active' : ''}`} onClick={() => setTextSize('medium')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.8rem' }}>M</button>
             <button className={`nav-tab ${textSize === 'large' ? 'active' : ''}`} onClick={() => setTextSize('large')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.9rem' }}>L</button>
           </div>
 
-          <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}>
-            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
+          <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.6rem', fontSize: '1rem', border: 'none' }} title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
+            {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           
           {/* Admin Lock */}
@@ -372,7 +372,8 @@ function App() {
         {currentView === 'fetcher' && (
           <section>
             {results.length > 0 ? (
-              <div className="data-table-container glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+              <>
+                <div className="data-table-container glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
                 <table className="data-table">
                   <thead>
                     <tr>
@@ -442,6 +443,7 @@ function App() {
                   </div>
                 </div>
               )}
+              </>
             ) : (
               <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>
                 <p>No issues fetched yet. Use the search bar in the navbar to begin.</p>
