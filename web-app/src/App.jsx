@@ -6,7 +6,7 @@ const API_BASE = config.frontend.api_base_url;
 const WS_BASE = config.frontend.ws_base_url;
 
 function App() {
-  const [currentView, setCurrentView] = useState('fetcher'); // 'fetcher' or 'analytics'
+  const [currentView, setCurrentView] = useState('analytics'); // 'fetcher' or 'analytics'
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'issueId');
   const [query, setQuery] = useState(() => localStorage.getItem('query') || '');
   const [isFetching, setIsFetching] = useState(false);
@@ -25,6 +25,36 @@ function App() {
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState('VIEWER');
+
+  // Auth Modals State
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
+  const [loginUsername, setLoginUsername] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [changePasswordOld, setChangePasswordOld] = useState('');
+  const [changePasswordNew, setChangePasswordNew] = useState('');
+  const [activeUsername, setActiveUsername] = useState(() => localStorage.getItem('username') || '');
+
+  // IP-based Auto Login
+  useEffect(() => {
+    const autoLogin = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/auth/me`);
+        const data = await res.json();
+        if (data.status === 'success') {
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('userRole', data.role);
+          localStorage.setItem('username', data.username);
+          setIsAdmin(true);
+          setUserRole(data.role);
+          setActiveUsername(data.username);
+        }
+      } catch (e) {
+        // Silently fail if not connected or no session
+      }
+    };
+    autoLogin();
+  }, []);
   
   // Analytics State
   const [stats, setStats] = useState({
@@ -95,35 +125,71 @@ function App() {
 
   const handleAdminToggle = async () => {
     if (isAdmin) {
+      try {
+        await fetch(`${API_BASE}/logout`, { method: 'POST' });
+      } catch (e) {}
       setIsAdmin(false);
       setUserRole('VIEWER');
+      setActiveUsername('');
       localStorage.removeItem('adminToken');
       localStorage.removeItem('userRole');
-      if (currentView === 'training' || currentView === 'users') setCurrentView('fetcher');
+      localStorage.removeItem('username');
+      if (currentView === 'training' || currentView === 'users' || currentView === 'fetcher') setCurrentView('analytics');
     } else {
-      const uname = prompt("Enter username (defaults to 'admin'):", "admin");
-      if (uname === null) return;
-      const pwd = prompt("Enter password:");
-      if (pwd !== null) {
-        try {
-          const res = await fetch(`${API_BASE}/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: uname, password: pwd })
-          });
-          const data = await res.json();
-          if (data.status === 'success') {
-             localStorage.setItem('adminToken', data.token);
-             localStorage.setItem('userRole', data.role);
-             setIsAdmin(true);
-             setUserRole(data.role);
-          } else {
-             alert(data.message);
-          }
-        } catch (e) {
-          alert("Failed to connect to login server.");
-        }
+      setIsLoginModalOpen(true);
+    }
+  };
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+         localStorage.setItem('adminToken', data.token);
+         localStorage.setItem('userRole', data.role);
+         localStorage.setItem('username', data.username);
+         setIsAdmin(true);
+         setUserRole(data.role);
+         setActiveUsername(data.username);
+         setIsLoginModalOpen(false);
+         setLoginUsername('');
+         setLoginPassword('');
+         setCurrentView('fetcher'); // Redirect to their issues
+      } else {
+         alert(data.message);
       }
+    } catch (e) {
+      alert("Failed to connect to login server.");
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/users/change-password`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ old_password: changePasswordOld, new_password: changePasswordNew })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+         alert("Password changed successfully!");
+         setIsChangePasswordModalOpen(false);
+         setChangePasswordOld('');
+         setChangePasswordNew('');
+      } else {
+         alert(data.message);
+      }
+    } catch (e) {
+      alert("Failed to change password.");
     }
   };
 
@@ -186,6 +252,24 @@ function App() {
       }
     } catch (e) {
       alert("Failed to delete user");
+    }
+  };
+
+  const handleResetPassword = async (id, username) => {
+    if (!window.confirm(`Force reset password for ${username} to 'password123'?`)) return;
+    try {
+      const res = await fetch(`${API_BASE}/users/${id}/reset-password`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        alert(data.message);
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      alert("Failed to reset password");
     }
   };
 
@@ -405,18 +489,19 @@ function App() {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '0.5rem 2rem', 
-        backgroundColor: 'var(--status-bar-bg)', 
-        borderBottom: '1px solid var(--border-color)',
-        fontSize: '0.75rem',
-      }}>
-        {/* Left: Navigation */}
-        <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.05)', padding: '0.25rem', borderRadius: '8px' }}>
-          <button 
-            className={`nav-tab ${currentView === 'fetcher' ? 'active' : ''}`}
-            onClick={() => setCurrentView('fetcher')}
-          >
-            Issue Fetcher
-          </button>
+      {/* 2. Main Content Area */}
+      <div className="main-content">
+        
+        {/* Navigation Tabs */}
+        <div className="nav-tabs" style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.05)', padding: '0.5rem 2rem', borderBottom: '1px solid var(--border-color)' }}>
+          {isAdmin && (userRole === 'SUPER_ADMIN' || userRole === 'EDITOR') && (
+            <button 
+              className={`nav-tab ${currentView === 'fetcher' ? 'active' : ''}`}
+              onClick={() => setCurrentView('fetcher')}
+            >
+              Issue Fetcher
+            </button>
+          )}
           <button 
             className={`nav-tab ${currentView === 'analytics' ? 'active' : ''}`}
             onClick={() => setCurrentView('analytics')}
@@ -443,289 +528,283 @@ function App() {
           )}
         </div>
 
-        {/* Right: Stats */}
-        <div style={{ display: 'flex', gap: '2rem' }}>
-          <div><span style={{ color: 'var(--text-secondary)' }}>Total Analyzed: </span><strong style={{ color: 'var(--accent-color)' }}>{stats.totalAnalyzed.toLocaleString()}</strong></div>
-          <div><span style={{ color: 'var(--text-secondary)' }}>Success Rate: </span><strong>{stats.successRate}%</strong></div>
-          <div><span style={{ color: 'var(--text-secondary)' }}>Man Hours Saved: </span><strong style={{ color: '#10b981' }}>{hoursSaved}h</strong></div>
-        </div>
-      </div>
+        {/* 3. Container */}
+        <div className="container" style={{ flex: 1, padding: '2rem' }}>
+          {currentView === 'fetcher' && (
+            <section>
+              {results.length > 0 ? (
+                <>
+                  <div className="data-table-container glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Issue ID</th>
+                        <th>Title</th>
+                        <th>Component</th>
+                        <th>Status</th>
+                        <th style={{ textAlign: 'right' }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {results.map(issue => (
+                        <tr key={issue.id}>
+                          <td style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{issue.id}</td>
+                          <td>{issue.title}</td>
+                          <td>{issue.component}</td>
+                          <td>
+                            <span style={{ 
+                              padding: '0.25rem 0.5rem', 
+                              borderRadius: '4px', 
+                              fontSize: '0.75rem',
+                              backgroundColor: issue.status === 'Open' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                              color: issue.status === 'Open' ? '#ef4444' : '#3b82f6'
+                            }}>
+                              {issue.status}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: 'right' }}>
+                            <button 
+                              className="btn" 
+                              onClick={() => handleAnalyze(issue.id)}
+                              disabled={analyzingId === issue.id}
+                              style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                            >
+                              {analyzingId === issue.id ? 'Analyzing...' : 'Analyze'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {/* Pagination Controls */}
+                {totalIssues > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0 1rem' }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      Showing {(currentPage - 1) * issuesPerPage + 1} - {Math.min(currentPage * issuesPerPage, totalIssues)} of {totalIssues} issues
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button 
+                        className="btn btn-secondary" 
+                        disabled={currentPage === 1 || isFetching}
+                        onClick={() => handleFetch(null, currentPage - 1)}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                      >
+                        Previous
+                      </button>
+                      <button 
+                        className="btn btn-secondary" 
+                        disabled={currentPage * issuesPerPage >= totalIssues || isFetching}
+                        onClick={() => handleFetch(null, currentPage + 1)}
+                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>
+                  <p>No issues fetched yet. Use the search bar in the navbar to begin.</p>
+                </div>
+              )}
+            </section>
+          )}
 
-      {/* 3. Container */}
-      <div className="container" style={{ flex: 1 }}>
-        {currentView === 'fetcher' && (
-          <section>
-            {results.length > 0 ? (
-              <>
-                <div className="data-table-container glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+          {currentView === 'analytics' && (
+            <section>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div className="glass-panel metric-card">
+                  <span className="metric-label">Total Analyzed</span>
+                  <span className="metric-value">{stats.totalAnalyzed.toLocaleString()}</span>
+                </div>
+                <div className="glass-panel metric-card">
+                  <span className="metric-label">Success Rate</span>
+                  <span className="metric-value">{stats.successRate}%</span>
+                </div>
+                <div className="glass-panel metric-card" style={{ border: '1px solid var(--accent-color)' }}>
+                  <span className="metric-label">Man Hours Saved</span>
+                  <span className="metric-value" style={{ color: '#10b981' }}>{hoursSaved}h</span>
+                </div>
+              </div>
+
+              <div className="glass-panel">
+                <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Top Issue Categories</h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {stats.categories.map(cat => (
+                    <div key={cat.name}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{cat.name}</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{cat.count} ({cat.percentage}%)</span>
+                      </div>
+                      <div className="progress-track">
+                        <div className="progress-fill" style={{ width: `${cat.percentage}%` }}></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {currentView === 'training' && isAdmin && (
+            <section>
+              <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <h2 style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>Admin Training Console</h2>
+                <p style={{ marginBottom: '2rem' }}>Feed manual log snippets and their root cause meanings to continuously improve the AI agent.</p>
+                
+                <form onSubmit={handleTrainSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <input 
+                      type="checkbox" 
+                      id="newIssueToggle"
+                      checked={isNewIssue}
+                      onChange={(e) => setIsNewIssue(e.target.checked)}
+                      style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
+                    />
+                    <label htmlFor="newIssueToggle" style={{ fontWeight: '500', cursor: 'pointer' }}>Define a New Issue Type</label>
+                  </div>
+
+                  {!isNewIssue ? (
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Target Issue ID</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="e.g. ISSUE-8492"
+                        value={trainIssueId}
+                        onChange={(e) => setTrainIssueId(e.target.value)}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div style={{ flex: 2 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>New Issue Title</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          placeholder="e.g. Memory Leak in ISP node"
+                          value={trainTitle}
+                          onChange={(e) => setTrainTitle(e.target.value)}
+                        />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Component</label>
+                        <input 
+                          type="text" 
+                          className="input-field" 
+                          placeholder="e.g. Camera"
+                          value={trainComponent}
+                          onChange={(e) => setTrainComponent(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Raw Log Snippet</label>
+                    <textarea 
+                      className="input-field" 
+                      style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem', resize: 'vertical' }}
+                      placeholder="Paste the confusing logcat lines here..."
+                      value={trainSnippet}
+                      onChange={(e) => setTrainSnippet(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Meaning / Root Cause</label>
+                    <textarea 
+                      className="input-field" 
+                      style={{ minHeight: '100px', resize: 'vertical' }}
+                      placeholder="Explain what this log snippet actually means to train the AI..."
+                      value={trainMeaning}
+                      onChange={(e) => setTrainMeaning(e.target.value)}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Attach Files (Optional)</label>
+                    <input 
+                      type="file" 
+                      multiple
+                      className="input-field" 
+                      onChange={(e) => setTrainFiles(e.target.files)}
+                    />
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Upload full logcats, bugreports, or dumpstates</p>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                    <button type="submit" className="btn" disabled={isTraining} style={{ padding: '0.75rem 2rem' }}>
+                      {isTraining ? 'Training AI...' : 'Submit to AI Agent'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </section>
+          )}
+          
+          {currentView === 'users' && isAdmin && userRole === 'SUPER_ADMIN' && (
+            <section>
+              <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                <h2 style={{ marginBottom: '1.5rem', color: '#8b5cf6' }}>User Management</h2>
+                
+                <form onSubmit={handleCreateUser} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'flex-end' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Username</label>
+                    <input type="text" className="input-field" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Password</label>
+                    <input type="password" className="input-field" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
+                    <select className="input-field" value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)}>
+                      <option value="VIEWER">VIEWER</option>
+                      <option value="EDITOR">EDITOR</option>
+                      <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                    </select>
+                  </div>
+                  <button type="submit" className="btn" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>Add User</button>
+                </form>
+
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Issue ID</th>
-                      <th>Title</th>
-                      <th>Component</th>
-                      <th>Status</th>
-                      <th style={{ textAlign: 'right' }}>Action</th>
+                      <th>Username</th>
+                      <th>Role</th>
+                      <th style={{ textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {results.map(issue => (
-                      <tr key={issue.id}>
-                        <td style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{issue.id}</td>
-                        <td>{issue.title}</td>
-                        <td>{issue.component}</td>
+                    {usersList.map(u => (
+                      <tr key={u.id}>
+                        <td style={{ fontWeight: 'bold' }}>{u.username}</td>
                         <td>
                           <span style={{ 
-                            padding: '0.25rem 0.5rem', 
-                            borderRadius: '4px', 
-                            fontSize: '0.75rem',
-                            backgroundColor: issue.status === 'Open' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                            color: issue.status === 'Open' ? '#ef4444' : '#3b82f6'
-                          }}>
-                            {issue.status}
-                          </span>
+                            padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem',
+                            background: u.role === 'SUPER_ADMIN' ? 'rgba(139, 92, 246, 0.2)' : u.role === 'EDITOR' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                            color: u.role === 'SUPER_ADMIN' ? '#8b5cf6' : u.role === 'EDITOR' ? '#10b981' : '#9ca3af'
+                          }}>{u.role}</span>
                         </td>
                         <td style={{ textAlign: 'right' }}>
-                          <button 
-                            className="btn" 
-                            onClick={() => handleAnalyze(issue.id)}
-                            disabled={analyzingId === issue.id}
-                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-                          >
-                            {analyzingId === issue.id ? 'Analyzing...' : 'Analyze'}
-                          </button>
+                          <button onClick={() => handleResetPassword(u.id, u.username)} className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', color: '#f59e0b', marginRight: '0.5rem' }}>Reset Password</button>
+                          {u.username !== 'admin' && (
+                            <button onClick={() => handleDeleteUser(u.id)} className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', color: '#ef4444' }}>Delete</button>
+                          )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              
-              {/* Pagination Controls */}
-              {totalIssues > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0 1rem' }}>
-                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                    Showing {(currentPage - 1) * issuesPerPage + 1} - {Math.min(currentPage * issuesPerPage, totalIssues)} of {totalIssues} issues
-                  </span>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button 
-                      className="btn btn-secondary" 
-                      disabled={currentPage === 1 || isFetching}
-                      onClick={() => handleFetch(null, currentPage - 1)}
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                    >
-                      Previous
-                    </button>
-                    <button 
-                      className="btn btn-secondary" 
-                      disabled={currentPage * issuesPerPage >= totalIssues || isFetching}
-                      onClick={() => handleFetch(null, currentPage + 1)}
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
-                    >
-                      Next
-                    </button>
-                  </div>
-                </div>
-              )}
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>
-                <p>No issues fetched yet. Use the search bar in the navbar to begin.</p>
-              </div>
-            )}
-          </section>
-        )}
-
-        {currentView === 'analytics' && (
-          <section>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
-              <div className="glass-panel metric-card">
-                <span className="metric-label">Total Analyzed</span>
-                <span className="metric-value">{stats.totalAnalyzed.toLocaleString()}</span>
-              </div>
-              <div className="glass-panel metric-card">
-                <span className="metric-label">Success Rate</span>
-                <span className="metric-value">{stats.successRate}%</span>
-              </div>
-              <div className="glass-panel metric-card" style={{ border: '1px solid var(--accent-color)' }}>
-                <span className="metric-label">Man Hours Saved</span>
-                <span className="metric-value" style={{ color: '#10b981' }}>{hoursSaved}h</span>
-              </div>
-            </div>
-
-            <div className="glass-panel">
-              <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Top Issue Categories</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {stats.categories.map(cat => (
-                  <div key={cat.name}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{cat.name}</span>
-                      <span style={{ color: 'var(--text-secondary)' }}>{cat.count} ({cat.percentage}%)</span>
-                    </div>
-                    <div className="progress-track">
-                      <div className="progress-fill" style={{ width: `${cat.percentage}%` }}></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {currentView === 'training' && isAdmin && (
-          <section>
-            <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
-              <h2 style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>Admin Training Console</h2>
-              <p style={{ marginBottom: '2rem' }}>Feed manual log snippets and their root cause meanings to continuously improve the AI agent.</p>
-              
-              <form onSubmit={handleTrainSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <input 
-                    type="checkbox" 
-                    id="newIssueToggle"
-                    checked={isNewIssue}
-                    onChange={(e) => setIsNewIssue(e.target.checked)}
-                    style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
-                  />
-                  <label htmlFor="newIssueToggle" style={{ fontWeight: '500', cursor: 'pointer' }}>Define a New Issue Type</label>
-                </div>
-
-                {!isNewIssue ? (
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Target Issue ID</label>
-                    <input 
-                      type="text" 
-                      className="input-field" 
-                      placeholder="e.g. ISSUE-8492"
-                      value={trainIssueId}
-                      onChange={(e) => setTrainIssueId(e.target.value)}
-                    />
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: '1rem' }}>
-                    <div style={{ flex: 2 }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>New Issue Title</label>
-                      <input 
-                        type="text" 
-                        className="input-field" 
-                        placeholder="e.g. Memory Leak in ISP node"
-                        value={trainTitle}
-                        onChange={(e) => setTrainTitle(e.target.value)}
-                      />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Component</label>
-                      <input 
-                        type="text" 
-                        className="input-field" 
-                        placeholder="e.g. Camera"
-                        value={trainComponent}
-                        onChange={(e) => setTrainComponent(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
-                
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Raw Log Snippet</label>
-                  <textarea 
-                    className="input-field" 
-                    style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem', resize: 'vertical' }}
-                    placeholder="Paste the confusing logcat lines here..."
-                    value={trainSnippet}
-                    onChange={(e) => setTrainSnippet(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Meaning / Root Cause</label>
-                  <textarea 
-                    className="input-field" 
-                    style={{ minHeight: '100px', resize: 'vertical' }}
-                    placeholder="Explain what this log snippet actually means to train the AI..."
-                    value={trainMeaning}
-                    onChange={(e) => setTrainMeaning(e.target.value)}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Attach Files (Optional)</label>
-                  <input 
-                    type="file" 
-                    multiple
-                    className="input-field" 
-                    onChange={(e) => setTrainFiles(e.target.files)}
-                  />
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Upload full logcats, bugreports, or dumpstates</p>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                  <button type="submit" className="btn" disabled={isTraining} style={{ padding: '0.75rem 2rem' }}>
-                    {isTraining ? 'Training AI...' : 'Submit to AI Agent'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        )}
-        
-        {currentView === 'users' && isAdmin && userRole === 'SUPER_ADMIN' && (
-          <section>
-            <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
-              <h2 style={{ marginBottom: '1.5rem', color: '#8b5cf6' }}>User Management</h2>
-              
-              <form onSubmit={handleCreateUser} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'flex-end' }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Username</label>
-                  <input type="text" className="input-field" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Password</label>
-                  <input type="password" className="input-field" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
-                  <select className="input-field" value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)}>
-                    <option value="VIEWER">VIEWER</option>
-                    <option value="EDITOR">EDITOR</option>
-                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-                  </select>
-                </div>
-                <button type="submit" className="btn" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>Add User</button>
-              </form>
-
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Username</th>
-                    <th>Role</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersList.map(u => (
-                    <tr key={u.id}>
-                      <td style={{ fontWeight: 'bold' }}>{u.username}</td>
-                      <td>
-                        <span style={{ 
-                          padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem',
-                          background: u.role === 'SUPER_ADMIN' ? 'rgba(139, 92, 246, 0.2)' : u.role === 'EDITOR' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
-                          color: u.role === 'SUPER_ADMIN' ? '#8b5cf6' : u.role === 'EDITOR' ? '#10b981' : '#9ca3af'
-                        }}>{u.role}</span>
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {u.username !== 'admin' && (
-                          <button onClick={() => handleDeleteUser(u.id)} className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', color: '#ef4444' }}>Delete</button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
+            </section>
+          )}
+        </div>
       </div>
 
       {/* AI Analysis Modal */}

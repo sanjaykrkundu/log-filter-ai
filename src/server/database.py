@@ -28,6 +28,13 @@ class Issue(Base):
     title = Column(String)
     component = Column(String)
     status = Column(String, default="Open")
+    assignee = Column(String, nullable=True)
+
+class IPSession(Base):
+    __tablename__ = "ip_sessions"
+    id = Column(Integer, primary_key=True, index=True)
+    ip_address = Column(String, unique=True, index=True)
+    username = Column(String)
 
 def get_db():
     db = SessionLocal()

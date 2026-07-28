@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, File, UploadFile, Depends, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Form, File, UploadFile, Depends, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
@@ -19,7 +19,7 @@ from src.analyzer.runtime_analyzer import RuntimeAnalyzer
 from src.trainer.orchestrator import TrainerOrchestrator
 from src.server.analytics import AnalyticsManager
 from sqlalchemy.orm import Session
-from src.server.database import get_db, init_db, User, Issue
+from src.server.database import get_db, init_db, User, Issue, IPSession
 from src.server.auth import verify_password, get_password_hash, create_access_token, get_current_super_admin, get_current_editor
 
 TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
@@ -60,10 +60,32 @@ def on_startup():
         db.add(admin)
         
     if db.query(Issue).count() == 0:
-        db.add(Issue(id="ISSUE-8492", title="Camera Service Crash on Resume", component="Camera", status="Open"))
-        db.add(Issue(id="ISSUE-9103", title="NullPointerException in ISP Node 5", component="ISP", status="Investigating"))
+        db.add(Issue(id="ISSUE-8492", title="Camera Service Crash on Resume", component="Camera", status="Open", assignee="admin"))
+        db.add(Issue(id="ISSUE-9103", title="NullPointerException in ISP Node 5", component="ISP", status="Investigating", assignee="admin"))
         
     db.commit()
+    asyncio.create_task(issue_poller_task())
+
+async def issue_poller_task():
+    import random
+    while True:
+        await asyncio.sleep(app_config["intervals"]["poll_ms"] / 1000.0)
+        db = next(get_db())
+        try:
+            editors = db.query(User).filter(User.role.in_(["EDITOR", "SUPER_ADMIN"])).all()
+            if editors:
+                assignee = random.choice(editors).username
+                issue_id = f"ISSUE-{str(uuid.uuid4())[:4].upper()}"
+                components = ["Camera", "ISP", "Sensor", "Display"]
+                new_issue = Issue(id=issue_id, title=f"Auto-generated mock issue", component=random.choice(components), status="Open", assignee=assignee)
+                db.add(new_issue)
+                db.commit()
+                # Inform clients of a new issue
+                asyncio.create_task(manager.broadcast('{"type": "new_issue"}'))
+        except Exception as e:
+            pass
+        finally:
+            db.close()
 
 # Configure CORS for React frontend
 app.add_middleware(
@@ -99,8 +121,8 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
 
 @app.post("/api/issues/fetch")
-async def fetch_issues(req: FetchRequest, db: Session = Depends(get_db)):
-    query_obj = db.query(Issue)
+async def fetch_issues(req: FetchRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_editor)):
+    query_obj = db.query(Issue).filter(Issue.assignee == current_user.username)
     if req.type == 'issueId' and req.query:
         query_obj = query_obj.filter(Issue.id.like(f"%{req.query}%"))
     elif req.type == 'group' and req.query:
@@ -117,13 +139,45 @@ async def fetch_issues(req: FetchRequest, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/login")
-async def login(req: LoginRequest, db: Session = Depends(get_db)):
+async def login(request: Request, req: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == req.username).first()
     if not user or not verify_password(req.password, user.hashed_password):
         return {"status": "error", "message": "Invalid username or password"}
         
+    client_ip = request.client.host
+    existing_session = db.query(IPSession).filter(IPSession.ip_address == client_ip).first()
+    if existing_session:
+        existing_session.username = user.username
+    else:
+        new_session = IPSession(ip_address=client_ip, username=user.username)
+        db.add(new_session)
+    db.commit()
+
     access_token = create_access_token(data={"sub": user.username})
-    return {"status": "success", "token": access_token, "role": user.role}
+    return {"status": "success", "token": access_token, "role": user.role, "username": user.username}
+
+@app.get("/api/auth/me")
+async def auto_login(request: Request, db: Session = Depends(get_db)):
+    client_ip = request.client.host
+    session = db.query(IPSession).filter(IPSession.ip_address == client_ip).first()
+    if not session:
+        return {"status": "error", "message": "No active session"}
+    
+    user = db.query(User).filter(User.username == session.username).first()
+    if not user:
+        return {"status": "error"}
+    
+    access_token = create_access_token(data={"sub": user.username})
+    return {"status": "success", "token": access_token, "role": user.role, "username": user.username}
+
+@app.post("/api/logout")
+async def logout(request: Request, db: Session = Depends(get_db)):
+    client_ip = request.client.host
+    session = db.query(IPSession).filter(IPSession.ip_address == client_ip).first()
+    if session:
+        db.delete(session)
+        db.commit()
+    return {"status": "success"}
 
 @app.post("/api/issues/analyze")
 async def analyze_issue(req: AnalyzeRequest):
@@ -235,3 +289,24 @@ async def delete_user(user_id: int, db: Session = Depends(get_db), current_user:
     db.delete(user)
     db.commit()
     return {"status": "success"}
+
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+@app.post("/api/users/change-password")
+async def change_password(req: ChangePasswordRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_editor)):
+    if not verify_password(req.old_password, current_user.hashed_password):
+        return {"status": "error", "message": "Incorrect old password"}
+    current_user.hashed_password = get_password_hash(req.new_password)
+    db.commit()
+    return {"status": "success"}
+
+@app.post("/api/users/{user_id}/reset-password")
+async def reset_password(user_id: int, db: Session = Depends(get_db), current_admin: User = Depends(get_current_super_admin)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return {"status": "error", "message": "User not found"}
+    user.hashed_password = get_password_hash("password123")
+    db.commit()
+    return {"status": "success", "message": f"Password for {user.username} reset to password123"}
