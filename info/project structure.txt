@@ -1,0 +1,35 @@
+camera-analyzer/
+
+│
+
+├── src/
+
+│      parser/
+
+│      trainer/
+
+│      analyzer/
+
+│      llm/
+
+│      vectors/
+
+│      report/
+
+│      utils/
+
+│
+
+├── training/
+
+├── trained/
+
+├── incoming/
+
+├── output/
+
+├── workspace/
+
+├── config/
+
+└── scripts/

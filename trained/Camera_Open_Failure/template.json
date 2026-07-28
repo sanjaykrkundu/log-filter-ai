@@ -1,0 +1,9 @@
+{
+    "issue_name": "Camera_Open_Failure",
+    "root_cause_summary": "The camera HAL encountered a fatal exception during opening.",
+    "key_indicators": [
+        "FATAL EXCEPTION in camera hal",
+        "opening camera"
+    ],
+    "suggested_fix": "Check HAL implementation or restart camera service."
+}

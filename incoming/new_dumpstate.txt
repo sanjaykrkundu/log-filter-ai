@@ -1,0 +1,4 @@
+01-24 10:11:12.345  1000  2000 D CameraService: starting
+01-24 10:11:12.350  1000  2000 I CamX: opening camera 1
+01-24 10:11:12.400  1000  2000 E Camera: FATAL EXCEPTION in camera hal when opening camera 1
+01-24 10:11:12.450  1000  2000 I CamX: closing camera 1

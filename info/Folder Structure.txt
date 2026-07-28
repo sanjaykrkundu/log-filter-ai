@@ -1,0 +1,49 @@
+camera-analyzer/
+
+│
+├── training/
+│
+│   ├── Camera_Open_Failure/
+│   │      issue.json
+│   │      hint.md
+│   │      logs/
+│   │          dump1.txt
+│   │          dump2.txt
+│   │
+│   ├── Preview_Timeout/
+│   │      issue.json
+│   │      hint.md
+│   │      logs/
+│   │
+│   ├── Capture_Failure/
+│   │
+│   └── AE_Stuck/
+│
+│
+├── trained/
+│
+│   ├── Camera_Open_Failure/
+│   │      template.json
+│   │      raw_patterns.json
+│   │      vectors.bin
+│   │      summary.md
+│   │
+│   ├── Preview_Timeout/
+│   │
+│   └── ...
+│
+│
+├── incoming/
+│      new_dumpstate.txt
+│
+├── workspace/
+│
+│      extracted_logs/
+│      chunks/
+│      llm_cache/
+│
+├── output/
+│      report.html
+│      report.json
+│
+└── config/

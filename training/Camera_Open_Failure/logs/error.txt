@@ -1,0 +1,2 @@
+FATAL EXCEPTION in camera hal
+opening camera 0 failed

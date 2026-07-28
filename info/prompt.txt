@@ -1,0 +1,21 @@
+i have a android log file. I want to create an issue analyzer for android camera. 
+- i do have an LLM
+- i cant train it with alot of log files, however i can give 1-2 log files for each issues. 
+- it should analyse the issues based on the older issue as well.
+- it should analyse the new issues as well and remember the erorr pattern
+
+can you create an design and architechture for this application.
+
+i cant pass the whole dumpstate file as well as the token limit and context limit is also there. 
+
+- keep in mind to optimize it for token/context limit. 
+time. and memory as well
+
+create a folder for training samples 
+- a folder will be there for each issue and logs will be the inside.
+- train the issue with manual error template or give hint to find and create template using llm. 
+- all the patterns will be saved locally in raw format ,as well as vector.. without any db.
+
+refer to the training output folder to analyse the issue 
+
+

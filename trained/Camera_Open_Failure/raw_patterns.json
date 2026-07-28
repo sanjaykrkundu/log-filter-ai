@@ -1,0 +1,20 @@
+[
+    {
+        "samples": [
+            "FATAL EXCEPTION in camera hal\n",
+            "opening camera 0 failed\n"
+        ]
+    },
+    {
+        "samples": [
+            "FATAL EXCEPTION in camera hal\n",
+            "opening camera 0 failed\n"
+        ]
+    },
+    {
+        "samples": [
+            "01-24 10:11:12.400  1000  2000 E Camera: FATAL EXCEPTION in camera hal when opening camera 1"
+        ],
+        "note": "Auto-merged from runtime"
+    }
+]

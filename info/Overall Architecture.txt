@@ -1,0 +1,44 @@
+                        +--------------------+
+                        | Training Samples   |
+                        | issues/            |
+                        +---------+----------+
+                                  |
+                                  |
+                    Offline Training Pipeline
+                                  |
+             +--------------------+--------------------+
+             |                                         |
+     Manual Templates                      LLM Pattern Discovery
+             |                                         |
+             +--------------------+--------------------+
+                                  |
+                          Pattern Generator
+                                  |
+                 +----------------+----------------+
+                 |                                 |
+          Raw Pattern Files               Vector Embeddings
+                 |                                 |
+                 +----------------+----------------+
+                                  |
+                         Pattern Repository
+                                  |
+                       (No database required)
+                                  |
+                                  |
+                         Runtime Analyzer
+                                  |
+                +-----------------+----------------+
+                |                                  |
+        Log Preprocessor                  Context Builder
+                |                                  |
+                +-----------------+----------------+
+                                  |
+                                 LLM
+                                  |
+                         Issue Classification
+                                  |
+                   Root Cause + Confidence Score
+                                  |
+                        Pattern Learning Engine
+                                  |
+                  Suggest New Pattern / Update Existing

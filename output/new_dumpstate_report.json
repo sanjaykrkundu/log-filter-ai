@@ -1,0 +1,16 @@
+{
+    "status": "success",
+    "findings": [
+        {
+            "line_number": 3,
+            "error_line": "01-24 10:11:12.400  1000  2000 E Camera: FATAL EXCEPTION in camera hal when opening camera 1",
+            "analysis": {
+                "classification": "KNOWN",
+                "issue_name": "Camera_Open_Failure",
+                "root_cause": "The camera HAL encountered a fatal exception during opening.",
+                "confidence_score": 0.92,
+                "suggested_fix": "Check HAL implementation or restart camera service."
+            }
+        }
+    ]
+}

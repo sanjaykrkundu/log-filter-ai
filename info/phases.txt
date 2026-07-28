@@ -1,0 +1,79 @@
+Week 1
+
+✔ Parser
+
+↓
+
+✔ Camera log extractor
+
+↓
+
+✔ Error extractor
+
+↓
+
+✔ Timeline builder
+
+----------------------------
+
+Week 2
+
+✔ Training folder
+
+↓
+
+✔ LLM template generator
+
+↓
+
+✔ Pattern generator
+
+↓
+
+✔ Summary generator
+
+----------------------------
+
+Week 3
+
+✔ Embedding generator
+
+↓
+
+✔ Local vector search
+
+↓
+
+✔ Similarity engine
+
+----------------------------
+
+Week 4
+
+✔ Runtime analyzer
+
+↓
+
+✔ Report generator
+
+↓
+
+✔ Root cause analyzer
+
+↓
+
+✔ Confidence scoring
+
+----------------------------
+
+Week 5
+
+✔ Incremental learning
+
+↓
+
+✔ Pattern merging
+
+↓
+
+✔ Auto suggestions

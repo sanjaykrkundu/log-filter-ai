@@ -1,0 +1,25 @@
+
+        <html>
+        <head>
+            <title>Camera Analyzer Report: new_dumpstate</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 2rem; background: #f9f9f9; }
+                h1 { color: #333; }
+                .finding { background: white; padding: 1.5rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                .error-line { background: #fee; color: #c00; padding: 0.5rem; border-radius: 4px; overflow-x: auto; }
+            </style>
+        </head>
+        <body>
+            <h1>Analysis Report for new_dumpstate</h1>
+            
+            <div class="finding">
+                <h2>Line 3: Camera_Open_Failure</h2>
+                <p><strong>Classification:</strong> KNOWN (Confidence: 0.92)</p>
+                <p><strong>Root Cause:</strong> The camera HAL encountered a fatal exception during opening.</p>
+                <p><strong>Suggested Fix:</strong> Check HAL implementation or restart camera service.</p>
+                <pre class="error-line">01-24 10:11:12.400  1000  2000 E Camera: FATAL EXCEPTION in camera hal when opening camera 1</pre>
+            </div>
+            
+        </body>
+        </html>
+        

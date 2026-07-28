@@ -1,0 +1,60 @@
+              Training
+                  │
+                  ▼
+      Camera Log Extraction
+                  │
+                  ▼
+         Manual Hint Injection
+                  │
+                  ▼
+       LLM Template Generation
+                  │
+                  ▼
+      Raw Pattern Serialization
+                  │
+                  ▼
+        Local Vector Creation
+                  │
+                  ▼
+          trained/<issue>/
+
+
+------------------------------------
+
+
+          New Dumpstate
+                  │
+                  ▼
+        Camera Log Extraction
+                  │
+                  ▼
+        Timeline Construction
+                  │
+                  ▼
+       Error Window Extraction
+                  │
+                  ▼
+      Local Vector Similarity Search
+                  │
+                  ▼
+      Load Top Matching Templates
+                  │
+                  ▼
+           Context Builder
+                  │
+                  ▼
+                LLM
+                  │
+        ┌─────────┴──────────┐
+        ▼                    ▼
+ Known Issue          Unknown Issue
+        │                    │
+        ▼                    ▼
+ Root Cause          Candidate Pattern
+        │                    │
+        └─────────┬──────────┘
+                  ▼
+        Pattern Learning Engine
+                  │
+                  ▼
+     Update Raw Patterns + Vectors
