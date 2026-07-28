@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form, File, UploadFile, Depends, WebSocket, WebSocketDisconnect, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
+from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import Optional, List
 import asyncio
@@ -213,9 +214,20 @@ async def analyze_issue(req: AnalyzeRequest):
         return {"status": "error", "message": f"Analysis failed: {str(e)}"}
 
 @app.get("/api/analytics")
-async def get_analytics():
+async def get_analytics(db: Session = Depends(get_db)):
     analytics = AnalyticsManager(WORKSPACE_DIR)
-    return analytics.get_stats()
+    stats = analytics.get_stats()
+    
+    now = datetime.utcnow()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+    
+    stats["issuesToday"] = db.query(Issue).filter(Issue.created_at >= today_start).count()
+    stats["issuesThisWeek"] = db.query(Issue).filter(Issue.created_at >= week_start).count()
+    stats["issuesThisMonth"] = db.query(Issue).filter(Issue.created_at >= month_start).count()
+    
+    return stats
 
 @app.post("/api/train")
 async def train_ai(

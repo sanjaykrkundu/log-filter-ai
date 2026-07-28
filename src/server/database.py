@@ -1,6 +1,7 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.sql import func
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
@@ -29,6 +30,7 @@ class Issue(Base):
     component = Column(String)
     status = Column(String, default="Open")
     assignee = Column(String, nullable=True)
+    created_at = Column(DateTime, default=func.now())
 
 class IPSession(Base):
     __tablename__ = "ip_sessions"

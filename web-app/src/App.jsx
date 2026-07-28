@@ -471,24 +471,28 @@ function App() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           
-          {/* Admin Lock */}
-          <button 
-            onClick={handleAdminToggle} 
-            className="btn btn-secondary" 
-            style={{ padding: '0.4rem 0.6rem', fontSize: '1rem', border: 'none' }}
-            title={isAdmin ? "Logout Admin" : "Admin Login"}
-          >
-            {isAdmin ? '🔓' : '🔒'}
-          </button>
+          {/* User Profile & Auth */}
+          {isAdmin ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0,0,0,0.05)', padding: '0.25rem 0.75rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-primary)', fontWeight: 'bold' }}>
+                {activeUsername}
+              </span>
+              <button onClick={() => setIsChangePasswordModalOpen(true)} title="Change Password" style={{ fontSize: '0.9rem', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+                🔑
+              </button>
+              <button className="btn btn-secondary" onClick={handleAdminToggle} style={{ padding: '0.2rem 0.6rem', fontSize: '0.75rem', marginLeft: '0.25rem' }}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <button className="btn" onClick={handleAdminToggle} style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
+              Login
+            </button>
+          )}
         </div>
       </header>
 
-      {/* 2. Statusbar */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '0.5rem 2rem', 
+
       {/* 2. Main Content Area */}
       <div className="main-content">
         
@@ -615,6 +619,23 @@ function App() {
 
           {currentView === 'analytics' && (
             <section>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>System Influx</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div className="glass-panel metric-card" style={{ background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <span className="metric-label">Issues Today</span>
+                  <span className="metric-value">{stats.issuesToday || 0}</span>
+                </div>
+                <div className="glass-panel metric-card" style={{ background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.05), transparent)', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                  <span className="metric-label">This Week</span>
+                  <span className="metric-value">{stats.issuesThisWeek || 0}</span>
+                </div>
+                <div className="glass-panel metric-card" style={{ background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.05), transparent)', border: '1px solid rgba(139, 92, 246, 0.2)' }}>
+                  <span className="metric-label">This Month</span>
+                  <span className="metric-value">{stats.issuesThisMonth || 0}</span>
+                </div>
+              </div>
+
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>AI Performance</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="glass-panel metric-card">
                   <span className="metric-label">Total Analyzed</span>
@@ -858,6 +879,52 @@ function App() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Login Modal */}
+      {isLoginModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(8px)' }}>
+          <div className="glass-panel" style={{ width: '90%', maxWidth: '400px', padding: '2rem' }}>
+            <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Agent Login</h2>
+            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Username</label>
+                <input type="text" className="input-field" value={loginUsername} onChange={(e) => setLoginUsername(e.target.value)} required autoFocus />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Password</label>
+                <input type="password" className="input-field" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsLoginModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn" style={{ flex: 1, background: 'linear-gradient(135deg, #10b981, #059669)' }}>Login</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Change Password Modal */}
+      {isChangePasswordModalOpen && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, backdropFilter: 'blur(8px)' }}>
+          <div className="glass-panel" style={{ width: '90%', maxWidth: '400px', padding: '2rem' }}>
+            <h2 style={{ marginBottom: '1.5rem', textAlign: 'center' }}>Change Password</h2>
+            <form onSubmit={handleChangePasswordSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Current Password</label>
+                <input type="password" className="input-field" value={changePasswordOld} onChange={(e) => setChangePasswordOld(e.target.value)} required autoFocus />
+              </div>
+              <div>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>New Password</label>
+                <input type="password" className="input-field" value={changePasswordNew} onChange={(e) => setChangePasswordNew(e.target.value)} required />
+              </div>
+              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+                <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setIsChangePasswordModalOpen(false)}>Cancel</button>
+                <button type="submit" className="btn" style={{ flex: 1, background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>Save</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
