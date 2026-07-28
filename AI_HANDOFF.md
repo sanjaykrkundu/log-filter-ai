@@ -69,12 +69,15 @@ This is the brains of the operation.
 *   **`/src/trainer/`**: Contains the learning engine. Scripts here take raw logs and human-provided meanings, compress them into `template.json` files using the LLM (`llm_template_gen.py`), and inject them into the vector database.
 *   **`/src/vectors/`**: Wrappers around `faiss-cpu` to handle fast semantic search of past logs.
 
-### 2. The FastAPI Server (`/src/server/main.py`)
+### 2. Configuration & Persona (`/config`)
+*   **`/config/domain_knowledge.txt`**: This is a critical file. It contains the complete system preamble injected into the `RootCauseAnalyzer` LLM. By default, it sets up an Android Camera expert persona, but **at setup time, users can overwrite this file** to make the AI an expert in Audio, Network, or any other domain, without touching Python code.
+
+### 3. The FastAPI Server (`/src/server/main.py`)
 This serves as the bridge between the AI Core and the React frontend.
 *   Currently handles CORS for `localhost:5173`.
 *   Houses three main endpoints: `/api/issues/fetch`, `/api/issues/analyze`, and `/api/train`.
 
-### 3. The React Web App (`/web-app`)
+### 4. The React Web App (`/web-app`)
 A heavily polished, modern SaaS interface designed for engineers and admins.
 *   **State Management**: Complex UI states (Dark/Light mode, S/M/L global text scaling, active tabs, Admin auth) are entirely managed in `App.jsx` and persisted across reloads using browser `localStorage`.
 *   **Styling (`index.css`)**: Built without external UI libraries. Uses native CSS variables for theme switching, dynamic `clamp()` and `rem` units for aggressive layout responsiveness, and modern glassmorphism/pill-tab aesthetics.
@@ -88,6 +91,7 @@ A heavily polished, modern SaaS interface designed for engineers and admins.
 | :--- | :--- | :--- |
 | **Frontend UI/UX** | **Complete** | Theme, text-scaling, persistent state, responsive tables, and forms are fully built and polished. |
 | **Admin Training UI** | **Complete** | Password-protected console supports attaching multiple files and defining new issue clusters. |
+| **Dynamic Persona** | **Complete** | `config/domain_knowledge.txt` allows full, code-free overwriting of the AI's system prompt and domain expertise. |
 | **Backend Endpoints** | **Stubbed** | `fetch`, `analyze`, and `train` endpoints exist in FastAPI and accept correct payloads, but return mock data. |
 | **AI Python Core** | **Written, but Unlinked** | The `RuntimeAnalyzer` and `Trainer` logic exists in `/src`, but they have **not** been imported or wired up to the FastAPI endpoints. |
 
