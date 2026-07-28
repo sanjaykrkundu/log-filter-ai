@@ -651,7 +651,7 @@ function App() {
 
           {currentView === 'training' && isAdmin && (
             <section>
-              <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <div className="glass-panel" style={{ width: '100%' }}>
                 <h2 style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>Admin Training Console</h2>
                 <p style={{ marginBottom: '2rem' }}>Feed manual log snippets and their root cause meanings to continuously improve the AI agent.</p>
                 
@@ -749,7 +749,7 @@ function App() {
           
           {currentView === 'users' && isAdmin && userRole === 'SUPER_ADMIN' && (
             <section>
-              <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <div className="glass-panel" style={{ width: '100%' }}>
                 <h2 style={{ marginBottom: '1.5rem', color: '#8b5cf6' }}>User Management</h2>
                 
                 <form onSubmit={handleCreateUser} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'flex-end' }}>

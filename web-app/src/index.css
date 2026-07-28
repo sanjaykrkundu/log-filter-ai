@@ -30,17 +30,13 @@
 
 [data-theme='light'] {
   --bg-color: #f9fafb;
-  --bg-gradient: none;
+  --bg-gradient: radial-gradient(circle at 50% -20%, #e0e7ff, #f9fafb 60%);
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --card-bg: #ffffff;
   --border-color: #e5e7eb;
   --glass-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
   --status-bar-bg: #f3f4f6;
-}
-
-[data-theme='light'] body {
-  background-image: none;
 }
 
 [data-theme='light'] .glass-panel {
