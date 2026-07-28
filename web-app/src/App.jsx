@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
+import config from '../../config/app_config.json';
 import './index.css';
+
+const API_BASE = config.frontend.api_base_url;
+const WS_BASE = config.frontend.ws_base_url;
 
 function App() {
   const [currentView, setCurrentView] = useState('fetcher'); // 'fetcher' or 'analytics'
@@ -38,7 +42,7 @@ function App() {
 
   // WebSocket for Live Analytics Sync
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8000/api/ws');
+    const ws = new WebSocket(WS_BASE);
     ws.onmessage = (event) => {
       try {
         const msg = JSON.parse(event.data);
@@ -91,7 +95,7 @@ function App() {
       const pwd = prompt("Enter admin password to access Training Console (Username defaults to 'admin'):");
       if (pwd !== null) {
         try {
-          const res = await fetch('http://localhost:8000/api/login', {
+          const res = await fetch(`${API_BASE}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: 'admin', password: pwd })
@@ -113,7 +117,7 @@ function App() {
   // Fetch real analytics data
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/analytics');
+      const res = await fetch(`${API_BASE}/analytics`);
       const data = await res.json();
       setStats(data);
     } catch (err) {
@@ -136,7 +140,7 @@ function App() {
     setResults([]);
     
     try {
-      const response = await fetch('http://localhost:8000/api/issues/fetch', {
+      const response = await fetch(`${API_BASE}/issues/fetch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: activeTab, query, page: pageOverride, limit: issuesPerPage })
@@ -156,7 +160,7 @@ function App() {
   const handleAnalyze = async (id) => {
     setAnalyzingId(id);
     try {
-      const response = await fetch('http://localhost:8000/api/issues/analyze', {
+      const response = await fetch(`${API_BASE}/issues/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ issue_id: id })
@@ -207,7 +211,7 @@ function App() {
       }
 
       const token = localStorage.getItem('adminToken');
-      const response = await fetch('http://localhost:8000/api/train', {
+      const response = await fetch(`${API_BASE}/train`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData

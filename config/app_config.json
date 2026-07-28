@@ -1,0 +1,18 @@
+{
+  "backend": {
+    "host": "localhost",
+    "port": 8000,
+    "cors_origins": [
+      "http://localhost:5173",
+      "http://127.0.0.1:5173"
+    ]
+  },
+  "frontend": {
+    "api_base_url": "http://localhost:8000/api",
+    "ws_base_url": "ws://localhost:8000/api/ws"
+  },
+  "intervals": {
+    "poll_ms": 5000,
+    "fetch_delay_ms": 1500
+  }
+}

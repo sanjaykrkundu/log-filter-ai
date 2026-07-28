@@ -8,6 +8,7 @@ import os
 import sys
 import uuid
 import shutil
+import json
 
 # Setup paths and imports
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -26,6 +27,11 @@ WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
 INCOMING_DIR = os.path.join(PROJECT_ROOT, "incoming")
 
 app = FastAPI(title="Log Filter AI Server")
+
+# Load central config
+CONFIG_PATH = os.path.join(PROJECT_ROOT, "config", "app_config.json")
+with open(CONFIG_PATH, "r") as f:
+    app_config = json.load(f)
 
 class ConnectionManager:
     def __init__(self):
@@ -62,7 +68,7 @@ def on_startup():
 # Configure CORS for React frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=app_config["backend"]["cors_origins"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
