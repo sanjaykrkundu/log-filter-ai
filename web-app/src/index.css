@@ -11,6 +11,35 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+[data-theme='light'] {
+  --bg-color: #f8fafc;
+  --bg-gradient: radial-gradient(circle at 50% -20%, #e0e7ff, #f8fafc 60%);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --card-bg: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .data-table th {
+  background: rgba(241, 245, 249, 0.8);
+  color: #475569;
+}
+
+[data-theme='light'] .data-table tbody tr:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='light'] select.input-field option {
+  background-color: #ffffff;
+  color: #0f172a;
+}
+
+[data-theme='light'] .input-field {
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--text-primary);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -115,8 +144,7 @@ p {
 
 /* Layout */
 .container {
-  max-width: 1000px;
-  margin: 0 auto;
+  width: 100%;
   padding: 2rem;
 }
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './index.css';
 
 function App() {
@@ -7,6 +7,16 @@ function App() {
   const [query, setQuery] = useState('');
   const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
+  const [theme, setTheme] = useState('dark');
+
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   // Mock Analytics Data
   const stats = {
@@ -67,26 +77,56 @@ function App() {
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        padding: '1rem 2rem', 
-        backgroundColor: 'rgba(15, 23, 42, 0.8)',
+        padding: '0.75rem 2rem', 
+        backgroundColor: 'var(--card-bg)',
         borderBottom: '1px solid var(--border-color)',
         backdropFilter: 'blur(12px)'
       }}>
-        <h1 style={{ fontSize: '1.5rem', margin: 0 }}>Log Filter AI</h1>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <button 
-            className={`btn ${currentView === 'fetcher' ? '' : 'btn-secondary'}`}
-            onClick={() => setCurrentView('fetcher')}
-            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-          >
-            Issue Fetcher
-          </button>
-          <button 
-            className={`btn ${currentView === 'analytics' ? '' : 'btn-secondary'}`}
-            onClick={() => setCurrentView('analytics')}
-            style={{ padding: '0.5rem 1rem', fontSize: '0.875rem' }}
-          >
-            Analytics
+        {/* Left: Logo */}
+        <div style={{ flex: 1 }}>
+          <h1 style={{ fontSize: '1.25rem', margin: 0, background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            Log Filter AI
+          </h1>
+        </div>
+
+        {/* Middle: Fetch Form */}
+        <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
+          <form onSubmit={handleFetch} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
+            <div style={{ width: '150px' }}>
+              <select 
+                className="input-field" 
+                style={{ padding: '0.5rem' }}
+                value={activeTab} 
+                onChange={(e) => {setActiveTab(e.target.value); setQuery('');}}
+              >
+                <option value="issueId">Issue ID</option>
+                <option value="username">Username</option>
+                <option value="group">Group</option>
+              </select>
+            </div>
+            <div style={{ flex: 1 }}>
+              <input 
+                type="text" 
+                className="input-field" 
+                style={{ padding: '0.5rem' }}
+                placeholder={
+                  activeTab === 'issueId' ? 'e.g. ISSUE-8492' : 
+                  activeTab === 'username' ? 'e.g. jdoe' : 'e.g. Camera-Framework'
+                }
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            <button type="submit" className="btn" disabled={isFetching || !query} style={{ padding: '0.5rem 1rem', minWidth: '100px' }}>
+              {isFetching ? 'Fetching...' : 'Fetch'}
+            </button>
+          </form>
+        </div>
+
+        {/* Right: Theme Toggle */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}>
+            {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
         </div>
       </header>
@@ -94,108 +134,92 @@ function App() {
       {/* 2. Statusbar */}
       <div style={{ 
         display: 'flex', 
-        justifyContent: 'center', 
-        gap: '3rem', 
-        padding: '0.75rem 2rem', 
-        backgroundColor: 'rgba(30, 41, 59, 0.5)', 
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '0.5rem 2rem', 
+        backgroundColor: 'rgba(0,0,0,0.1)', 
         borderBottom: '1px solid var(--border-color)',
-        fontSize: '0.875rem',
+        fontSize: '0.75rem',
       }}>
-        <div><span style={{ color: 'var(--text-secondary)' }}>Total Analyzed: </span><strong style={{ color: 'var(--accent-color)' }}>{stats.totalAnalyzed.toLocaleString()}</strong></div>
-        <div><span style={{ color: 'var(--text-secondary)' }}>Success Rate: </span><strong>{stats.successRate}%</strong></div>
-        <div><span style={{ color: 'var(--text-secondary)' }}>Man Hours Saved: </span><strong style={{ color: '#10b981' }}>{hoursSaved}h</strong></div>
+        {/* Left: Navigation */}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button 
+            className={`btn ${currentView === 'fetcher' ? '' : 'btn-secondary'}`}
+            onClick={() => setCurrentView('fetcher')}
+            style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', borderRadius: '4px' }}
+          >
+            Issue Fetcher
+          </button>
+          <button 
+            className={`btn ${currentView === 'analytics' ? '' : 'btn-secondary'}`}
+            onClick={() => setCurrentView('analytics')}
+            style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', borderRadius: '4px' }}
+          >
+            Analytics Data
+          </button>
+        </div>
+
+        {/* Right: Stats */}
+        <div style={{ display: 'flex', gap: '2rem' }}>
+          <div><span style={{ color: 'var(--text-secondary)' }}>Total Analyzed: </span><strong style={{ color: 'var(--accent-color)' }}>{stats.totalAnalyzed.toLocaleString()}</strong></div>
+          <div><span style={{ color: 'var(--text-secondary)' }}>Success Rate: </span><strong>{stats.successRate}%</strong></div>
+          <div><span style={{ color: 'var(--text-secondary)' }}>Man Hours Saved: </span><strong style={{ color: '#10b981' }}>{hoursSaved}h</strong></div>
+        </div>
       </div>
 
       {/* 3. Container */}
-      <div className="container" style={{ flex: 1, paddingTop: '2rem' }}>
+      <div className="container" style={{ flex: 1 }}>
         {currentView === 'fetcher' && (
-          <>
-            <main className="glass-panel" style={{ marginBottom: '2rem' }}>
-              <form onSubmit={handleFetch} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                <div style={{ width: '200px' }}>
-                  <select 
-                    className="input-field" 
-                    value={activeTab} 
-                    onChange={(e) => {setActiveTab(e.target.value); setQuery('');}}
-                  >
-                    <option value="issueId">Single Issue ID</option>
-                    <option value="username">Username</option>
-                    <option value="group">Group</option>
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder={
-                      activeTab === 'issueId' ? 'e.g. ISSUE-8492' : 
-                      activeTab === 'username' ? 'e.g. jdoe' : 'e.g. Camera-Framework'
-                    }
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-                <button type="submit" className="btn" disabled={isFetching || !query} style={{ minWidth: '150px' }}>
-                  {isFetching ? (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div style={{ width: '16px', height: '16px', border: '2px solid white', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
-                      Fetching...
-                    </span>
-                  ) : (
-                    'Fetch Data'
-                  )}
-                </button>
-              </form>
-            </main>
-
-            {results.length > 0 && (
-              <section>
-                <h2 style={{ marginBottom: '1rem' }}>Fetched Issues</h2>
-                <div className="data-table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Issue ID</th>
-                        <th>Title</th>
-                        <th>Component</th>
-                        <th>Status</th>
-                        <th style={{ textAlign: 'right' }}>Action</th>
+          <section>
+            {results.length > 0 ? (
+              <div className="data-table-container glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Issue ID</th>
+                      <th>Title</th>
+                      <th>Component</th>
+                      <th>Status</th>
+                      <th style={{ textAlign: 'right' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {results.map(issue => (
+                      <tr key={issue.id}>
+                        <td style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{issue.id}</td>
+                        <td>{issue.title}</td>
+                        <td>{issue.component}</td>
+                        <td>
+                          <span style={{ 
+                            padding: '0.25rem 0.5rem', 
+                            borderRadius: '4px', 
+                            fontSize: '0.75rem',
+                            backgroundColor: issue.status === 'Open' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
+                            color: issue.status === 'Open' ? '#ef4444' : '#3b82f6'
+                          }}>
+                            {issue.status}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button 
+                            className="btn" 
+                            onClick={() => handleAnalyze(issue.id)}
+                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                          >
+                            Analyze
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {results.map(issue => (
-                        <tr key={issue.id}>
-                          <td style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{issue.id}</td>
-                          <td>{issue.title}</td>
-                          <td>{issue.component}</td>
-                          <td>
-                            <span style={{ 
-                              padding: '0.25rem 0.5rem', 
-                              borderRadius: '4px', 
-                              fontSize: '0.75rem',
-                              backgroundColor: issue.status === 'Open' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)',
-                              color: issue.status === 'Open' ? '#fca5a5' : '#93c5fd'
-                            }}>
-                              {issue.status}
-                            </span>
-                          </td>
-                          <td style={{ textAlign: 'right' }}>
-                            <button 
-                              className="btn" 
-                              onClick={() => handleAnalyze(issue.id)}
-                              style={{ padding: '0.5rem 1rem', fontSize: '0.875rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
-                            >
-                              Analyze
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>
+                <p>No issues fetched yet. Use the search bar in the navbar to begin.</p>
+              </div>
             )}
-          </>
+          </section>
         )}
 
         {currentView === 'analytics' && (
@@ -216,12 +240,12 @@ function App() {
             </div>
 
             <div className="glass-panel">
-              <h3 style={{ marginBottom: '1.5rem' }}>Top Issue Categories</h3>
+              <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-primary)' }}>Top Issue Categories</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {stats.categories.map(cat => (
                   <div key={cat.name}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: '500' }}>{cat.name}</span>
+                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>{cat.name}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>{cat.count} ({cat.percentage}%)</span>
                     </div>
                     <div className="progress-track">
@@ -234,12 +258,6 @@ function App() {
           </section>
         )}
       </div>
-
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }
