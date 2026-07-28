@@ -16,6 +16,7 @@ if PROJECT_ROOT not in sys.path:
 
 from src.analyzer.runtime_analyzer import RuntimeAnalyzer
 from src.trainer.orchestrator import TrainerOrchestrator
+from src.server.analytics import AnalyticsManager
 
 TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
 WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
@@ -74,9 +75,24 @@ async def analyze_issue(req: AnalyzeRequest):
         analyzer = RuntimeAnalyzer(trained_dir=TRAINED_DIR, workspace_dir=WORKSPACE_DIR)
         # Run heavy FAISS/LLM logic in threadpool to avoid blocking
         result = await run_in_threadpool(analyzer.analyze_dumpstate, ds_path)
+        
+        # Record live analytics
+        analytics = AnalyticsManager(WORKSPACE_DIR)
+        findings = result.get("findings", [])
+        is_success = len(findings) > 0
+        category = "Unknown Issue"
+        if is_success:
+            category = findings[0].get("analysis", {}).get("issue_name", "Unknown Issue")
+        analytics.record_analysis(success=is_success, category_name=category)
+        
         return {"status": "success", "message": f"Analysis complete for {req.issue_id}", "data": result}
     except Exception as e:
         return {"status": "error", "message": f"Analysis failed: {str(e)}"}
+
+@app.get("/api/analytics")
+async def get_analytics():
+    analytics = AnalyticsManager(WORKSPACE_DIR)
+    return analytics.get_stats()
 
 @app.post("/api/train")
 async def train_ai(

@@ -10,6 +10,13 @@ function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
+  
+  // Analytics State
+  const [stats, setStats] = useState({
+    totalAnalyzed: 0,
+    successRate: 0,
+    categories: []
+  });
 
   // Training form states
   const [isNewIssue, setIsNewIssue] = useState(false);
@@ -69,17 +76,22 @@ function App() {
     }
   };
 
-  // Mock Analytics Data
-  const stats = {
-    totalAnalyzed: 1248,
-    successRate: 94.2,
-    categories: [
-      { name: 'CameraService Crashes', count: 450, percentage: 36 },
-      { name: 'ISP Hardware Timeouts', count: 320, percentage: 25 },
-      { name: 'Memory Leaks', count: 280, percentage: 22 },
-      { name: 'Unknown/Other', count: 198, percentage: 17 }
-    ]
+  // Fetch real analytics data
+  const fetchAnalytics = async () => {
+    try {
+      const res = await fetch('http://localhost:8000/api/analytics');
+      const data = await res.json();
+      setStats(data);
+    } catch (err) {
+      console.error("Failed to fetch analytics", err);
+    }
   };
+
+  useEffect(() => {
+    // Refresh analytics when switching views or after an analysis completes
+    fetchAnalytics();
+  }, [currentView, analysisResult]);
+
   const hoursSaved = (stats.totalAnalyzed * 1.5).toLocaleString(); // 1.5 hours per issue
 
   const handleFetch = async (e) => {
