@@ -18,6 +18,7 @@ function App() {
   const [trainComponent, setTrainComponent] = useState('');
   const [trainSnippet, setTrainSnippet] = useState('');
   const [trainMeaning, setTrainMeaning] = useState('');
+  const [trainFiles, setTrainFiles] = useState(null);
   const [isTraining, setIsTraining] = useState(false);
 
   // Apply theme and persist to localStorage
@@ -132,23 +133,31 @@ function App() {
     
     setIsTraining(true);
     try {
+      const formData = new FormData();
+      formData.append('issue_id', trainIssueId || "AUTO-GENERATE");
+      formData.append('is_new_issue', isNewIssue);
+      formData.append('title', trainTitle || "");
+      formData.append('component', trainComponent || "");
+      formData.append('snippet', trainSnippet);
+      formData.append('meaning', trainMeaning);
+      
+      if (trainFiles) {
+        for (let i = 0; i < trainFiles.length; i++) {
+          formData.append('files', trainFiles[i]);
+        }
+      }
+
       const response = await fetch('http://localhost:8000/api/train', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          issue_id: trainIssueId || "AUTO-GENERATE",
-          is_new_issue: isNewIssue,
-          title: trainTitle,
-          component: trainComponent,
-          snippet: trainSnippet,
-          meaning: trainMeaning
-        })
+        body: formData
       });
       const data = await response.json();
       alert(data.message);
       setTrainSnippet('');
       setTrainMeaning('');
       setTrainTitle('');
+      setTrainFiles(null);
+      // Reset file input visually if needed, though simple state clear handles logic.
     } catch (err) {
       console.error("Failed to submit training data", err);
       alert("Failed to connect to backend server.");
@@ -447,6 +456,17 @@ function App() {
                     value={trainMeaning}
                     onChange={(e) => setTrainMeaning(e.target.value)}
                   />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Attach Files (Optional)</label>
+                  <input 
+                    type="file" 
+                    multiple
+                    className="input-field" 
+                    onChange={(e) => setTrainFiles(e.target.files)}
+                  />
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>Upload full logcats, bugreports, or dumpstates</p>
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>

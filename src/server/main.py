@@ -1,7 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import asyncio
 
 app = FastAPI(title="Log Filter AI Server")
@@ -22,14 +22,6 @@ class FetchRequest(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     issue_id: str
-
-class TrainRequest(BaseModel):
-    issue_id: str
-    is_new_issue: Optional[bool] = False
-    title: Optional[str] = None
-    component: Optional[str] = None
-    snippet: str
-    meaning: str
 
 # Endpoints
 @app.post("/api/issues/fetch")
@@ -55,12 +47,23 @@ async def analyze_issue(req: AnalyzeRequest):
     return {"status": "success", "message": f"Successfully triggered Log Filter AI analysis for {req.issue_id}!"}
 
 @app.post("/api/train")
-async def train_ai(req: TrainRequest):
+async def train_ai(
+    issue_id: str = Form("AUTO-GENERATE"),
+    is_new_issue: bool = Form(False),
+    title: Optional[str] = Form(None),
+    component: Optional[str] = Form(None),
+    snippet: str = Form(""),
+    meaning: str = Form(""),
+    files: List[UploadFile] = File(default=[])
+):
     # This is where we will hook into src.trainer.learning_engine or similar
     await asyncio.sleep(1)
-    if req.is_new_issue:
-        print(f"Defining NEW Issue:\nTitle: {req.title}\nComponent: {req.component}\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
-        return {"status": "success", "message": f"Successfully created new issue type: {req.title}!"}
+    
+    file_names = [f.filename for f in files if f.filename]
+
+    if is_new_issue:
+        print(f"Defining NEW Issue:\nTitle: {title}\nComponent: {component}\nSnippet: {snippet}\nMeaning: {meaning}\nFiles: {file_names}")
+        return {"status": "success", "message": f"Successfully created new issue type: {title} with {len(file_names)} files!"}
     else:
-        print(f"Received training data for {req.issue_id}:\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
-        return {"status": "success", "message": f"Successfully ingested training data for {req.issue_id}!"}
+        print(f"Received training data for {issue_id}:\nSnippet: {snippet}\nMeaning: {meaning}\nFiles: {file_names}")
+        return {"status": "success", "message": f"Successfully ingested training data for {issue_id} with {len(file_names)} files!"}
