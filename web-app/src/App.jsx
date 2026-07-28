@@ -5,6 +5,7 @@ function App() {
   const [currentView, setCurrentView] = useState('fetcher'); // 'fetcher' or 'analytics'
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'issueId');
   const [query, setQuery] = useState(() => localStorage.getItem('query') || '');
+  const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
