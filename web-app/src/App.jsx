@@ -5,10 +5,16 @@ function App() {
   const [currentView, setCurrentView] = useState('fetcher'); // 'fetcher' or 'analytics'
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('activeTab') || 'issueId');
   const [query, setQuery] = useState(() => localStorage.getItem('query') || '');
-  const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
+
+  // Training form states
+  const [trainIssueId, setTrainIssueId] = useState('');
+  const [trainSnippet, setTrainSnippet] = useState('');
+  const [trainMeaning, setTrainMeaning] = useState('');
+  const [isTraining, setIsTraining] = useState(false);
 
   // Apply theme and persist to localStorage
   useEffect(() => {
@@ -22,6 +28,11 @@ function App() {
     localStorage.setItem('textSize', textSize);
   }, [textSize]);
 
+  // Persist admin state
+  useEffect(() => {
+    localStorage.setItem('isAdmin', isAdmin);
+  }, [isAdmin]);
+
   // Persist search preferences
   useEffect(() => {
     localStorage.setItem('activeTab', activeTab);
@@ -33,6 +44,20 @@ function App() {
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleAdminToggle = () => {
+    if (isAdmin) {
+      setIsAdmin(false);
+      if (currentView === 'training') setCurrentView('fetcher');
+    } else {
+      const pwd = prompt("Enter admin password to access Training Console:");
+      if (pwd === 'admin123') {
+        setIsAdmin(true);
+      } else if (pwd !== null) {
+        alert("Incorrect password.");
+      }
+    }
   };
 
   // Mock Analytics Data
@@ -83,6 +108,36 @@ function App() {
     } catch (err) {
       console.error("Failed to analyze issue", err);
       alert("Failed to connect to backend server.");
+    }
+  };
+
+  const handleTrainSubmit = async (e) => {
+    e.preventDefault();
+    if (!trainIssueId || !trainSnippet || !trainMeaning) {
+      alert("Please fill in all fields.");
+      return;
+    }
+    
+    setIsTraining(true);
+    try {
+      const response = await fetch('http://localhost:8000/api/train', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          issue_id: trainIssueId,
+          snippet: trainSnippet,
+          meaning: trainMeaning
+        })
+      });
+      const data = await response.json();
+      alert(data.message);
+      setTrainSnippet('');
+      setTrainMeaning('');
+    } catch (err) {
+      console.error("Failed to submit training data", err);
+      alert("Failed to connect to backend server.");
+    } finally {
+      setIsTraining(false);
     }
   };
 
@@ -154,6 +209,16 @@ function App() {
           <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}>
             {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
+          
+          {/* Admin Lock */}
+          <button 
+            onClick={handleAdminToggle} 
+            className="btn btn-secondary" 
+            style={{ padding: '0.4rem 0.6rem', fontSize: '1rem', border: 'none' }}
+            title={isAdmin ? "Logout Admin" : "Admin Login"}
+          >
+            {isAdmin ? '🔓' : '🔒'}
+          </button>
         </div>
       </header>
 
@@ -181,6 +246,15 @@ function App() {
           >
             Analytics Data
           </button>
+          {isAdmin && (
+            <button 
+              className={`nav-tab ${currentView === 'training' ? 'active' : ''}`}
+              onClick={() => setCurrentView('training')}
+              style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}
+            >
+              ⚙️ Training Console
+            </button>
+          )}
         </div>
 
         {/* Right: Stats */}
@@ -278,6 +352,56 @@ function App() {
                   </div>
                 ))}
               </div>
+            </div>
+          </section>
+        )}
+
+        {currentView === 'training' && isAdmin && (
+          <section>
+            <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h2 style={{ marginBottom: '0.5rem', color: 'var(--accent-color)' }}>Admin Training Console</h2>
+              <p style={{ marginBottom: '2rem' }}>Feed manual log snippets and their root cause meanings to continuously improve the AI agent.</p>
+              
+              <form onSubmit={handleTrainSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Target Issue ID</label>
+                  <input 
+                    type="text" 
+                    className="input-field" 
+                    placeholder="e.g. ISSUE-8492"
+                    value={trainIssueId}
+                    onChange={(e) => setTrainIssueId(e.target.value)}
+                  />
+                </div>
+                
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Raw Log Snippet</label>
+                  <textarea 
+                    className="input-field" 
+                    style={{ minHeight: '150px', fontFamily: 'monospace', fontSize: '0.875rem', resize: 'vertical' }}
+                    placeholder="Paste the confusing logcat lines here..."
+                    value={trainSnippet}
+                    onChange={(e) => setTrainSnippet(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Meaning / Root Cause</label>
+                  <textarea 
+                    className="input-field" 
+                    style={{ minHeight: '100px', resize: 'vertical' }}
+                    placeholder="Explain what this log snippet actually means to train the AI..."
+                    value={trainMeaning}
+                    onChange={(e) => setTrainMeaning(e.target.value)}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                  <button type="submit" className="btn" disabled={isTraining} style={{ padding: '0.75rem 2rem' }}>
+                    {isTraining ? 'Training AI...' : 'Submit to AI Agent'}
+                  </button>
+                </div>
+              </form>
             </div>
           </section>
         )}

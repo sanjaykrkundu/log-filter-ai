@@ -22,6 +22,11 @@ class FetchRequest(BaseModel):
 class AnalyzeRequest(BaseModel):
     issue_id: str
 
+class TrainRequest(BaseModel):
+    issue_id: str
+    snippet: str
+    meaning: str
+
 # Endpoints
 @app.post("/api/issues/fetch")
 async def fetch_issues(req: FetchRequest):
@@ -44,3 +49,10 @@ async def analyze_issue(req: AnalyzeRequest):
     # Simulate analysis delay
     await asyncio.sleep(2)
     return {"status": "success", "message": f"Successfully triggered Log Filter AI analysis for {req.issue_id}!"}
+
+@app.post("/api/train")
+async def train_ai(req: TrainRequest):
+    # This is where we will hook into src.trainer.learning_engine or similar
+    await asyncio.sleep(1)
+    print(f"Received training data for {req.issue_id}:\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
+    return {"status": "success", "message": f"Successfully ingested training data for {req.issue_id}!"}
