@@ -40,6 +40,10 @@
   color: var(--text-primary);
 }
 
+[data-theme='light'] .progress-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
