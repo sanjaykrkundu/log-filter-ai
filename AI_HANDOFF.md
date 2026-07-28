@@ -92,8 +92,8 @@ A heavily polished, modern SaaS interface designed for engineers and admins.
 | **Frontend UI/UX** | **Complete** | Theme, text-scaling, persistent state, responsive tables, and forms are fully built and polished. |
 | **Admin Training UI** | **Complete** | Password-protected console supports attaching multiple files and defining new issue clusters. |
 | **Dynamic Persona** | **Complete** | `config/domain_knowledge.txt` allows full, code-free overwriting of the AI's system prompt and domain expertise. |
-| **Backend Endpoints** | **Stubbed** | `fetch`, `analyze`, and `train` endpoints exist in FastAPI and accept correct payloads, but return mock data. |
-| **AI Python Core** | **Written, but Unlinked** | The `RuntimeAnalyzer` and `Trainer` logic exists in `/src`, but they have **not** been imported or wired up to the FastAPI endpoints. |
+| **Analyzer Engine** | **Complete** | The `RuntimeAnalyzer` is wired to the frontend. It runs in a FastAPI threadpool, fetches LLM findings, and renders them in a React modal. |
+| **Trainer / Analytics**| **Stubbed** | `train` and `fetch` endpoints exist in FastAPI but return/accept mock data. The Python `Trainer` is written but not wired yet. |
 
 ---
 
@@ -105,10 +105,9 @@ When you take over, focus on these immediate integration tasks:
     *   **Goal**: Replace the `asyncio.sleep(1)` stub in `/api/train` with actual logic from `/src/trainer/`.
     *   **Action**: When an admin submits the `multipart/form-data` via the Training Console, process the uploaded `UploadFile` objects, pass the human-written `meaning` into the `Trainer` module, generate an embedding, and save the resulting template to the FAISS DB.
 
-2.  **Wire the Analyzer (`/api/issues/analyze`)**
-    *   **Goal**: Replace the stub in `/api/issues/analyze`.
-    *   **Action**: When the user clicks "Analyze" on an issue, trigger `RuntimeAnalyzer.analyze_dumpstate()`, wait for the LLM to generate the root cause, and stream/return the actual findings to the React UI instead of the mock success message.
-
-3.  **Build Real Analytics**
+2.  **Build Real Analytics**
     *   **Goal**: The `totalAnalyzed` and `manHoursSaved` metrics in the UI are currently hardcoded.
     *   **Action**: Create a `GET /api/analytics` endpoint that queries a real database (or reads execution logs) to calculate the actual success rate and man-hours saved, then update `App.jsx` to fetch this data.
+
+---
+*End of Handoff Document. You've got this!*
