@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from typing import Optional
 import asyncio
 
 app = FastAPI(title="Log Filter AI Server")
@@ -24,6 +25,9 @@ class AnalyzeRequest(BaseModel):
 
 class TrainRequest(BaseModel):
     issue_id: str
+    is_new_issue: Optional[bool] = False
+    title: Optional[str] = None
+    component: Optional[str] = None
     snippet: str
     meaning: str
 
@@ -54,5 +58,9 @@ async def analyze_issue(req: AnalyzeRequest):
 async def train_ai(req: TrainRequest):
     # This is where we will hook into src.trainer.learning_engine or similar
     await asyncio.sleep(1)
-    print(f"Received training data for {req.issue_id}:\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
-    return {"status": "success", "message": f"Successfully ingested training data for {req.issue_id}!"}
+    if req.is_new_issue:
+        print(f"Defining NEW Issue:\nTitle: {req.title}\nComponent: {req.component}\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
+        return {"status": "success", "message": f"Successfully created new issue type: {req.title}!"}
+    else:
+        print(f"Received training data for {req.issue_id}:\nSnippet: {req.snippet}\nMeaning: {req.meaning}")
+        return {"status": "success", "message": f"Successfully ingested training data for {req.issue_id}!"}

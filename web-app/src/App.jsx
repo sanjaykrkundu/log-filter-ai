@@ -12,7 +12,10 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
 
   // Training form states
+  const [isNewIssue, setIsNewIssue] = useState(false);
   const [trainIssueId, setTrainIssueId] = useState('');
+  const [trainTitle, setTrainTitle] = useState('');
+  const [trainComponent, setTrainComponent] = useState('');
   const [trainSnippet, setTrainSnippet] = useState('');
   const [trainMeaning, setTrainMeaning] = useState('');
   const [isTraining, setIsTraining] = useState(false);
@@ -114,8 +117,16 @@ function App() {
 
   const handleTrainSubmit = async (e) => {
     e.preventDefault();
-    if (!trainIssueId || !trainSnippet || !trainMeaning) {
-      alert("Please fill in all fields.");
+    if (!trainSnippet || !trainMeaning) {
+      alert("Please provide the log snippet and meaning.");
+      return;
+    }
+    if (isNewIssue && (!trainTitle || !trainComponent)) {
+      alert("Please provide a title and component for the new issue.");
+      return;
+    }
+    if (!isNewIssue && !trainIssueId) {
+      alert("Please provide the target Issue ID.");
       return;
     }
     
@@ -125,7 +136,10 @@ function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          issue_id: trainIssueId,
+          issue_id: trainIssueId || "AUTO-GENERATE",
+          is_new_issue: isNewIssue,
+          title: trainTitle,
+          component: trainComponent,
           snippet: trainSnippet,
           meaning: trainMeaning
         })
@@ -134,6 +148,7 @@ function App() {
       alert(data.message);
       setTrainSnippet('');
       setTrainMeaning('');
+      setTrainTitle('');
     } catch (err) {
       console.error("Failed to submit training data", err);
       alert("Failed to connect to backend server.");
@@ -364,16 +379,53 @@ function App() {
               <p style={{ marginBottom: '2rem' }}>Feed manual log snippets and their root cause meanings to continuously improve the AI agent.</p>
               
               <form onSubmit={handleTrainSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Target Issue ID</label>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <input 
-                    type="text" 
-                    className="input-field" 
-                    placeholder="e.g. ISSUE-8492"
-                    value={trainIssueId}
-                    onChange={(e) => setTrainIssueId(e.target.value)}
+                    type="checkbox" 
+                    id="newIssueToggle"
+                    checked={isNewIssue}
+                    onChange={(e) => setIsNewIssue(e.target.checked)}
+                    style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer' }}
                   />
+                  <label htmlFor="newIssueToggle" style={{ fontWeight: '500', cursor: 'pointer' }}>Define a New Issue Type</label>
                 </div>
+
+                {!isNewIssue ? (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Target Issue ID</label>
+                    <input 
+                      type="text" 
+                      className="input-field" 
+                      placeholder="e.g. ISSUE-8492"
+                      value={trainIssueId}
+                      onChange={(e) => setTrainIssueId(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div style={{ flex: 2 }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>New Issue Title</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="e.g. Memory Leak in ISP node"
+                        value={trainTitle}
+                        onChange={(e) => setTrainTitle(e.target.value)}
+                      />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Component</label>
+                      <input 
+                        type="text" 
+                        className="input-field" 
+                        placeholder="e.g. Camera"
+                        value={trainComponent}
+                        onChange={(e) => setTrainComponent(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
                 
                 <div>
                   <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Raw Log Snippet</label>
