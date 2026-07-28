@@ -15,7 +15,7 @@ class RootCauseAnalyzer:
         self.kr = KnowledgeRetriever(self.trained_dir)
         
         # Load domain knowledge from config
-        self.domain_knowledge = ""
+        self.domain_knowledge = "You are an expert Android system debugger."
         dk_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "domain_knowledge.txt")
         if os.path.exists(dk_path):
             try:
@@ -70,8 +70,6 @@ class RootCauseAnalyzer:
                 return f"Error reading logcat: {str(e)}"
                 
         prompt = f"""
-You are an expert Android system debugger. 
-
 {self.domain_knowledge}
 
 Analyze the following context, which includes known issue templates and an initial error window.
