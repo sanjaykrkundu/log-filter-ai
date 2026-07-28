@@ -239,7 +239,7 @@ p {
 }
 
 .data-table th, .data-table td {
-  padding: 1rem;
+  padding: clamp(0.5rem, 2vh, 1rem) 1rem;
   border-bottom: 1px solid var(--border-color);
 }
 
