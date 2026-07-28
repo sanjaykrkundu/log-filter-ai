@@ -301,7 +301,10 @@ function App() {
     try {
       const response = await fetch(`${API_BASE}/issues/fetch`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
         body: JSON.stringify({ type: activeTab, query, page: pageOverride, limit: issuesPerPage })
       });
       const data = await response.json();
