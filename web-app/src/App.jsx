@@ -258,7 +258,7 @@ function App() {
       }}>
         {/* Left: Logo */}
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <img src="/logo.jpg" alt="Log Filter AI Logo" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
+          <img src="/logo.svg" alt="Log Filter AI Logo" style={{ width: '32px', height: '32px', borderRadius: '6px' }} />
           <h1 style={{ fontSize: '1.25rem', margin: 0, background: 'linear-gradient(135deg, var(--text-primary), var(--text-secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             Log Filter AI
           </h1>
