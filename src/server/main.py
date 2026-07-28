@@ -6,6 +6,8 @@ from typing import Optional, List
 import asyncio
 import os
 import sys
+import uuid
+import shutil
 
 # Setup paths and imports
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -13,6 +15,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 from src.analyzer.runtime_analyzer import RuntimeAnalyzer
+from src.trainer.orchestrator import TrainerOrchestrator
 
 TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
 WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
@@ -85,14 +88,32 @@ async def train_ai(
     meaning: str = Form(""),
     files: List[UploadFile] = File(default=[])
 ):
-    # This is where we will hook into src.trainer.learning_engine or similar
-    await asyncio.sleep(1)
-    
-    file_names = [f.filename for f in files if f.filename]
-
-    if is_new_issue:
-        print(f"Defining NEW Issue:\nTitle: {title}\nComponent: {component}\nSnippet: {snippet}\nMeaning: {meaning}\nFiles: {file_names}")
-        return {"status": "success", "message": f"Successfully created new issue type: {title} with {len(file_names)} files!"}
-    else:
-        print(f"Received training data for {issue_id}:\nSnippet: {snippet}\nMeaning: {meaning}\nFiles: {file_names}")
-        return {"status": "success", "message": f"Successfully ingested training data for {issue_id} with {len(file_names)} files!"}
+    if issue_id == "AUTO-GENERATE" or not issue_id.strip():
+        issue_id = f"ISSUE-{str(uuid.uuid4())[:8].upper()}"
+        
+    # Save uploaded files for archival
+    if files and any(f.filename for f in files):
+        raw_dir = os.path.join(PROJECT_ROOT, "training", "raw", issue_id)
+        os.makedirs(raw_dir, exist_ok=True)
+        for f in files:
+            if f.filename:
+                file_path = os.path.join(raw_dir, f.filename)
+                with open(file_path, "wb") as buffer:
+                    shutil.copyfileobj(f.file, buffer)
+                    
+    try:
+        orchestrator = TrainerOrchestrator(trained_dir=TRAINED_DIR)
+        
+        # Run heavy FAISS/LLM logic in threadpool
+        result = await run_in_threadpool(
+            orchestrator.train_issue,
+            issue_id,
+            title or "",
+            component or "",
+            snippet,
+            meaning
+        )
+        
+        return {"status": "success", "message": f"Successfully trained AI for {issue_id}!", "data": result}
+    except Exception as e:
+        return {"status": "error", "message": f"Training failed: {str(e)}"}
