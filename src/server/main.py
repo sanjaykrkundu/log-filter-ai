@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, File, UploadFile, Depends
+from fastapi import FastAPI, Form, File, UploadFile, Depends, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
@@ -26,6 +26,23 @@ WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
 INCOMING_DIR = os.path.join(PROJECT_ROOT, "incoming")
 
 app = FastAPI(title="Log Filter AI Server")
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+manager = ConnectionManager()
 
 @app.on_event("startup")
 def on_startup():
@@ -55,6 +72,8 @@ app.add_middleware(
 class FetchRequest(BaseModel):
     type: str # 'issueId', 'username', or 'group'
     query: str
+    page: int = 1
+    limit: int = 50
 
 class AnalyzeRequest(BaseModel):
     issue_id: str
@@ -64,16 +83,32 @@ class LoginRequest(BaseModel):
     password: str
 
 # Endpoints
+@app.websocket("/api/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    try:
+        while True:
+            data = await websocket.receive_text()
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+
 @app.post("/api/issues/fetch")
 async def fetch_issues(req: FetchRequest, db: Session = Depends(get_db)):
+    query_obj = db.query(Issue)
     if req.type == 'issueId' and req.query:
-        issues = db.query(Issue).filter(Issue.id.like(f"%{req.query}%")).all()
+        query_obj = query_obj.filter(Issue.id.like(f"%{req.query}%"))
     elif req.type == 'group' and req.query:
-        issues = db.query(Issue).filter(Issue.component.like(f"%{req.query}%")).all()
-    else:
-        issues = db.query(Issue).all()
+        query_obj = query_obj.filter(Issue.component.like(f"%{req.query}%"))
         
-    return [{"id": i.id, "title": i.title, "component": i.component, "status": i.status} for i in issues]
+    total_count = query_obj.count()
+    issues = query_obj.offset((req.page - 1) * req.limit).limit(req.limit).all()
+        
+    return {
+        "total": total_count,
+        "page": req.page,
+        "limit": req.limit,
+        "issues": [{"id": i.id, "title": i.title, "component": i.component, "status": i.status} for i in issues]
+    }
 
 @app.post("/api/login")
 async def login(req: LoginRequest, db: Session = Depends(get_db)):
@@ -111,6 +146,7 @@ async def analyze_issue(req: AnalyzeRequest):
         if is_success:
             category = findings[0].get("analysis", {}).get("issue_name", "Unknown Issue")
         analytics.record_analysis(success=is_success, category_name=category)
+        await manager.broadcast('{"type": "analytics_update"}')
         
         return {"status": "success", "message": f"Analysis complete for {req.issue_id}", "data": result}
     except Exception as e:
@@ -158,6 +194,7 @@ async def train_ai(
             meaning
         )
         
+        await manager.broadcast('{"type": "analytics_update"}')
         return {"status": "success", "message": f"Successfully trained AI for {issue_id}!", "data": result}
     except Exception as e:
         return {"status": "error", "message": f"Training failed: {str(e)}"}

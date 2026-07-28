@@ -7,6 +7,10 @@ function App() {
   const [query, setQuery] = useState(() => localStorage.getItem('query') || '');
   const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalIssues, setTotalIssues] = useState(0);
+  const issuesPerPage = 50;
+  
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
@@ -31,6 +35,22 @@ function App() {
   // Analysis states
   const [analysisResult, setAnalysisResult] = useState(null);
   const [analyzingId, setAnalyzingId] = useState(null);
+
+  // WebSocket for Live Analytics Sync
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8000/api/ws');
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(event.data);
+        if (msg.type === 'analytics_update') {
+          fetchAnalytics(); // Silently refresh data
+        }
+      } catch (e) {
+        console.error("Failed to parse websocket message", e);
+      }
+    };
+    return () => ws.close();
+  }, []);
 
   // Apply theme and persist to localStorage
   useEffect(() => {
@@ -108,8 +128,8 @@ function App() {
 
   const hoursSaved = (stats.totalAnalyzed * 1.5).toLocaleString(); // 1.5 hours per issue
 
-  const handleFetch = async (e) => {
-    e.preventDefault();
+  const handleFetch = async (e, pageOverride = 1) => {
+    if (e) e.preventDefault();
     if (!query) return;
     
     setIsFetching(true);
@@ -119,10 +139,12 @@ function App() {
       const response = await fetch('http://localhost:8000/api/issues/fetch', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: activeTab, query })
+        body: JSON.stringify({ type: activeTab, query, page: pageOverride, limit: issuesPerPage })
       });
       const data = await response.json();
-      setResults(data);
+      setResults(data.issues || []);
+      setTotalIssues(data.total || 0);
+      setCurrentPage(data.page || 1);
     } catch (err) {
       console.error("Failed to fetch issues", err);
       alert("Failed to connect to backend server.");
@@ -239,7 +261,7 @@ function App() {
 
         {/* Middle: Fetch Form */}
         <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-          <form onSubmit={handleFetch} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
+          <form onSubmit={(e) => handleFetch(e, 1)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
             <div style={{ width: '150px' }}>
               <select 
                 className="input-field" 
@@ -389,6 +411,33 @@ function App() {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Pagination Controls */}
+              {totalIssues > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', padding: '0 1rem' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                    Showing {(currentPage - 1) * issuesPerPage + 1} - {Math.min(currentPage * issuesPerPage, totalIssues)} of {totalIssues} issues
+                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn btn-secondary" 
+                      disabled={currentPage === 1 || isFetching}
+                      onClick={() => handleFetch(null, currentPage - 1)}
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                    >
+                      Previous
+                    </button>
+                    <button 
+                      className="btn btn-secondary" 
+                      disabled={currentPage * issuesPerPage >= totalIssues || isFetching}
+                      onClick={() => handleFetch(null, currentPage + 1)}
+                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem' }}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             ) : (
               <div style={{ textAlign: 'center', marginTop: '4rem', color: 'var(--text-secondary)' }}>
                 <p>No issues fetched yet. Use the search bar in the navbar to begin.</p>
