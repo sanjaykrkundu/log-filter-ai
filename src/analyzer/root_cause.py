@@ -14,6 +14,16 @@ class RootCauseAnalyzer:
         self.trained_dir = trained_dir
         self.kr = KnowledgeRetriever(self.trained_dir)
         
+        # Load domain knowledge from config
+        self.domain_knowledge = ""
+        dk_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "config", "domain_knowledge.txt")
+        if os.path.exists(dk_path):
+            try:
+                with open(dk_path, "r", encoding="utf-8") as f:
+                    self.domain_knowledge = f.read().strip()
+            except Exception as e:
+                print(f"Warning: Could not read domain knowledge config: {e}")
+        
         api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set.")
@@ -62,13 +72,7 @@ class RootCauseAnalyzer:
         prompt = f"""
 You are an expert Android system debugger. 
 
-### Domain Knowledge: Android Camera Architecture
-When analyzing logs, keep the following camera architecture components in mind:
-1. **Application Framework (Camera2 API / CameraX)**: The app layer. Look for `CameraManager`, `CameraDevice`. Errors here usually indicate app-level lifecycle issues.
-2. **Camera Service (cameraserver)**: The C++ daemon managing camera resources. Look for `CameraService`, `Camera3Device`. Crashes here (e.g., SIGSEGV in `libcameraservice`) are severe.
-3. **Camera HAL (Hardware Abstraction Layer)**: The vendor-specific code (e.g., Qualcomm `camx`, MediaTek `mtkcam`) that talks to the hardware. Errors like "Failed to configure streams" or "Device fatal error" originate here.
-4. **ISP (Image Signal Processor) / Sensor**: The physical hardware and low-level processing. Look for `v4l2`, `sensor`, `i2c`, `MIPI`. Errors here indicate hardware failure or bad driver state.
-5. **Memory/Buffer Management**: Gralloc, ION, or DMA-BUF. Look for "Failed to allocate buffer" or "BufferQueueProducer". Implies memory leaks or surface configuration issues.
+{self.domain_knowledge}
 
 Analyze the following context, which includes known issue templates and an initial error window.
 If you need more context (e.g., to see what happened 50 lines before the error), use the `fetch_log_context` tool!
