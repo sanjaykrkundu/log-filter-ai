@@ -428,36 +428,38 @@ function App() {
 
         {/* Middle: Fetch Form */}
         <div style={{ flex: 2, display: 'flex', justifyContent: 'center' }}>
-          <form onSubmit={(e) => handleFetch(e, 1)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
-            <div style={{ width: '150px' }}>
-              <select 
-                className="input-field" 
-                style={{ padding: '0.5rem' }}
-                value={activeTab} 
-                onChange={(e) => {setActiveTab(e.target.value); setQuery('');}}
-              >
-                <option value="issueId">Issue ID</option>
-                <option value="username">Username</option>
-                <option value="group">Group</option>
-              </select>
-            </div>
-            <div style={{ flex: 1 }}>
-              <input 
-                type="text" 
-                className="input-field" 
-                style={{ padding: '0.5rem' }}
-                placeholder={
-                  activeTab === 'issueId' ? 'e.g. ISSUE-8492' : 
-                  activeTab === 'username' ? 'e.g. jdoe' : 'e.g. Camera-Framework'
-                }
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn" disabled={isFetching || !query} style={{ padding: '0.5rem 1rem', minWidth: '100px' }}>
-              {isFetching ? 'Fetching...' : 'Fetch'}
-            </button>
-          </form>
+          {isAdmin && (userRole === 'SUPER_ADMIN' || userRole === 'EDITOR') && (
+            <form onSubmit={(e) => handleFetch(e, 1)} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', width: '100%', maxWidth: '600px' }}>
+              <div style={{ width: '150px' }}>
+                <select 
+                  className="input-field" 
+                  style={{ padding: '0.5rem' }}
+                  value={activeTab} 
+                  onChange={(e) => {setActiveTab(e.target.value); setQuery('');}}
+                >
+                  <option value="issueId">Issue ID</option>
+                  <option value="username">Username</option>
+                  <option value="group">Group</option>
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <input 
+                  type="text" 
+                  className="input-field" 
+                  style={{ padding: '0.5rem' }}
+                  placeholder={
+                    activeTab === 'issueId' ? 'e.g. ISSUE-8492' : 
+                    activeTab === 'username' ? 'e.g. jdoe' : 'e.g. Camera-Framework'
+                  }
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <button type="submit" className="btn" disabled={isFetching || !query} style={{ padding: '0.5rem 1rem', minWidth: '100px' }}>
+                {isFetching ? 'Fetching...' : 'Fetch'}
+              </button>
+            </form>
+          )}
         </div>
 
         {/* Right: Theme Toggle & Text Size */}
