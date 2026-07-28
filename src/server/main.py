@@ -1,8 +1,22 @@
 from fastapi import FastAPI, Form, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 from typing import Optional, List
 import asyncio
+import os
+import sys
+
+# Setup paths and imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
+
+from src.analyzer.runtime_analyzer import RuntimeAnalyzer
+
+TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
+WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
+INCOMING_DIR = os.path.join(PROJECT_ROOT, "incoming")
 
 app = FastAPI(title="Log Filter AI Server")
 
@@ -41,10 +55,25 @@ async def fetch_issues(req: FetchRequest):
 
 @app.post("/api/issues/analyze")
 async def analyze_issue(req: AnalyzeRequest):
-    # This is where we will eventually hand off to src.analyzer.runtime_analyzer
-    # Simulate analysis delay
-    await asyncio.sleep(2)
-    return {"status": "success", "message": f"Successfully triggered Log Filter AI analysis for {req.issue_id}!"}
+    # Ensure workspace subdirectories exist
+    os.makedirs(os.path.join(WORKSPACE_DIR, "extracted_logs"), exist_ok=True)
+    
+    # Determine the dumpstate path
+    ds_path = os.path.join(INCOMING_DIR, f"{req.issue_id}.txt")
+    if not os.path.exists(ds_path):
+        # Fallback to test file for prototyping
+        ds_path = os.path.join(INCOMING_DIR, "new_dumpstate.txt")
+        
+    if not os.path.exists(ds_path):
+        return {"status": "error", "message": f"Dumpstate file not found for {req.issue_id}"}
+        
+    try:
+        analyzer = RuntimeAnalyzer(trained_dir=TRAINED_DIR, workspace_dir=WORKSPACE_DIR)
+        # Run heavy FAISS/LLM logic in threadpool to avoid blocking
+        result = await run_in_threadpool(analyzer.analyze_dumpstate, ds_path)
+        return {"status": "success", "message": f"Analysis complete for {req.issue_id}", "data": result}
+    except Exception as e:
+        return {"status": "error", "message": f"Analysis failed: {str(e)}"}
 
 @app.post("/api/train")
 async def train_ai(

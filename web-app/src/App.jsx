@@ -21,6 +21,10 @@ function App() {
   const [trainFiles, setTrainFiles] = useState(null);
   const [isTraining, setIsTraining] = useState(false);
 
+  // Analysis states
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [analyzingId, setAnalyzingId] = useState(null);
+
   // Apply theme and persist to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -102,6 +106,7 @@ function App() {
   };
 
   const handleAnalyze = async (id) => {
+    setAnalyzingId(id);
     try {
       const response = await fetch('http://localhost:8000/api/issues/analyze', {
         method: 'POST',
@@ -109,10 +114,16 @@ function App() {
         body: JSON.stringify({ issue_id: id })
       });
       const data = await response.json();
-      alert(data.message);
+      if (data.status === 'success') {
+        setAnalysisResult(data.data);
+      } else {
+        alert(data.message);
+      }
     } catch (err) {
       console.error("Failed to analyze issue", err);
       alert("Failed to connect to backend server.");
+    } finally {
+      setAnalyzingId(null);
     }
   };
 
@@ -327,9 +338,10 @@ function App() {
                           <button 
                             className="btn" 
                             onClick={() => handleAnalyze(issue.id)}
+                            disabled={analyzingId === issue.id}
                             style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', background: 'linear-gradient(135deg, #10b981, #059669)' }}
                           >
-                            Analyze
+                            {analyzingId === issue.id ? 'Analyzing...' : 'Analyze'}
                           </button>
                         </td>
                       </tr>
@@ -479,6 +491,61 @@ function App() {
           </section>
         )}
       </div>
+
+      {/* AI Analysis Modal */}
+      {analysisResult && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }}>
+          <div className="glass-panel" style={{ width: '90%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ margin: 0, color: 'var(--text-primary)' }}>AI Root Cause Analysis</h2>
+              <button className="btn btn-secondary" onClick={() => setAnalysisResult(null)} style={{ padding: '0.4rem 0.8rem' }}>Close</button>
+            </div>
+            
+            {(!analysisResult.findings || analysisResult.findings.length === 0) ? (
+              <p style={{ color: 'var(--text-secondary)' }}>No actionable errors found in the dumpstate.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {analysisResult.findings.map((finding, idx) => (
+                  <div key={idx} style={{ padding: '1rem', border: '1px solid var(--border-color)', borderRadius: '8px', background: 'rgba(0,0,0,0.02)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                      <span style={{ 
+                        padding: '0.25rem 0.5rem', 
+                        borderRadius: '4px', 
+                        fontSize: '0.75rem',
+                        fontWeight: 'bold',
+                        backgroundColor: finding.analysis?.classification === 'KNOWN' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        color: finding.analysis?.classification === 'KNOWN' ? '#10b981' : '#ef4444'
+                      }}>
+                        {finding.analysis?.classification || 'UNKNOWN'}
+                      </span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Confidence: <strong>{finding.analysis?.confidence_score || '0'}</strong></span>
+                    </div>
+                    
+                    <h3 style={{ marginBottom: '0.5rem', fontSize: '1.1rem', color: 'var(--accent-color)' }}>{finding.analysis?.issue_name || 'Unidentified Issue'}</h3>
+                    
+                    <div style={{ marginBottom: '1rem' }}>
+                      <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Root Cause:</strong>
+                      <p style={{ margin: '0.25rem 0 0 0', lineHeight: 1.5, color: 'var(--text-primary)' }}>{finding.analysis?.root_cause || 'N/A'}</p>
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Suggested Fix:</strong>
+                      <p style={{ margin: '0.25rem 0 0 0', lineHeight: 1.5, color: 'var(--text-primary)' }}>{finding.analysis?.suggested_fix || 'N/A'}</p>
+                    </div>
+                    
+                    <div>
+                      <strong style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Raw Log Line:</strong>
+                      <div style={{ marginTop: '0.25rem', padding: '0.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.75rem', overflowX: 'auto', whiteSpace: 'pre', color: 'var(--text-secondary)' }}>
+                        L{finding.line_number}: {finding.error_line}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
