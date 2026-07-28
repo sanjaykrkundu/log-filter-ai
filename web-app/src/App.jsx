@@ -635,6 +635,45 @@ function App() {
                 </div>
               </div>
 
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>Top Recurring Issues</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div className="glass-panel" style={{ padding: '1rem' }}>
+                  <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>Today (Top 5)</h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {stats.topIssuesToday?.length > 0 ? stats.topIssuesToday.map((issue, idx) => (
+                      <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }} title={issue.title}>{issue.title}</span>
+                        <span style={{ background: 'var(--accent-color)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem' }}>{issue.count}</span>
+                      </li>
+                    )) : <li style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No issues today.</li>}
+                  </ul>
+                </div>
+                
+                <div className="glass-panel" style={{ padding: '1rem' }}>
+                  <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>This Week (Top 10)</h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {stats.topIssuesThisWeek?.length > 0 ? stats.topIssuesThisWeek.map((issue, idx) => (
+                      <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }} title={issue.title}>{issue.title}</span>
+                        <span style={{ background: 'var(--accent-color)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem' }}>{issue.count}</span>
+                      </li>
+                    )) : <li style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No issues this week.</li>}
+                  </ul>
+                </div>
+                
+                <div className="glass-panel" style={{ padding: '1rem' }}>
+                  <h4 style={{ marginBottom: '1rem', color: 'var(--text-secondary)', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.5rem' }}>This Month (Top 15)</h4>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
+                    {stats.topIssuesThisMonth?.length > 0 ? stats.topIssuesThisMonth.map((issue, idx) => (
+                      <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem' }}>
+                        <span style={{ color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }} title={issue.title}>{issue.title}</span>
+                        <span style={{ background: 'var(--accent-color)', color: 'white', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.75rem' }}>{issue.count}</span>
+                      </li>
+                    )) : <li style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>No issues this month.</li>}
+                  </ul>
+                </div>
+              </div>
+
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-primary)' }}>AI Performance</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '2rem' }}>
                 <div className="glass-panel metric-card">

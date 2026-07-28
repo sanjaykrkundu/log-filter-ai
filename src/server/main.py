@@ -2,6 +2,7 @@ from fastapi import FastAPI, Form, File, UploadFile, Depends, WebSocket, WebSock
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from datetime import datetime, timedelta
+from sqlalchemy import func
 from pydantic import BaseModel
 from typing import Optional, List
 import asyncio
@@ -226,6 +227,18 @@ async def get_analytics(db: Session = Depends(get_db)):
     stats["issuesToday"] = db.query(Issue).filter(Issue.created_at >= today_start).count()
     stats["issuesThisWeek"] = db.query(Issue).filter(Issue.created_at >= week_start).count()
     stats["issuesThisMonth"] = db.query(Issue).filter(Issue.created_at >= month_start).count()
+    
+    def get_top_issues(start_date, limit):
+        results = db.query(Issue.title, func.count(Issue.id).label('count')) \
+            .filter(Issue.created_at >= start_date) \
+            .group_by(Issue.title) \
+            .order_by(func.count(Issue.id).desc()) \
+            .limit(limit).all()
+        return [{"title": r[0], "count": r[1]} for r in results]
+
+    stats["topIssuesToday"] = get_top_issues(today_start, 5)
+    stats["topIssuesThisWeek"] = get_top_issues(week_start, 10)
+    stats["topIssuesThisMonth"] = get_top_issues(month_start, 15)
     
     return stats
 
