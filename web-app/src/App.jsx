@@ -18,6 +18,13 @@ function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
   const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem('isAdmin') === 'true');
+  const [userRole, setUserRole] = useState(() => localStorage.getItem('userRole') || 'VIEWER');
+  
+  // Users State
+  const [usersList, setUsersList] = useState([]);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newUserRole, setNewUserRole] = useState('VIEWER');
   
   // Analytics State
   const [stats, setStats] = useState({
@@ -89,21 +96,27 @@ function App() {
   const handleAdminToggle = async () => {
     if (isAdmin) {
       setIsAdmin(false);
+      setUserRole('VIEWER');
       localStorage.removeItem('adminToken');
-      if (currentView === 'training') setCurrentView('fetcher');
+      localStorage.removeItem('userRole');
+      if (currentView === 'training' || currentView === 'users') setCurrentView('fetcher');
     } else {
-      const pwd = prompt("Enter admin password to access Training Console (Username defaults to 'admin'):");
+      const uname = prompt("Enter username (defaults to 'admin'):", "admin");
+      if (uname === null) return;
+      const pwd = prompt("Enter password:");
       if (pwd !== null) {
         try {
           const res = await fetch(`${API_BASE}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: 'admin', password: pwd })
+            body: JSON.stringify({ username: uname, password: pwd })
           });
           const data = await res.json();
           if (data.status === 'success') {
              localStorage.setItem('adminToken', data.token);
+             localStorage.setItem('userRole', data.role);
              setIsAdmin(true);
+             setUserRole(data.role);
           } else {
              alert(data.message);
           }
@@ -111,6 +124,68 @@ function App() {
           alert("Failed to connect to login server.");
         }
       }
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/users`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setUsersList(data.users);
+      }
+    } catch (err) {
+      console.error("Failed to fetch users");
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === 'users' && userRole === 'SUPER_ADMIN') {
+      fetchUsers();
+    }
+  }, [currentView, userRole]);
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${API_BASE}/users`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
+        body: JSON.stringify({ username: newUsername, password: newPassword, role: newUserRole })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setNewUsername('');
+        setNewPassword('');
+        fetchUsers();
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      alert("Failed to create user");
+    }
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm("Delete this user?")) return;
+    try {
+      const res = await fetch(`${API_BASE}/users/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('adminToken')}` }
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        fetchUsers();
+      } else {
+        alert(data.message);
+      }
+    } catch (e) {
+      alert("Failed to delete user");
     }
   };
 
@@ -348,13 +423,22 @@ function App() {
           >
             Analytics Data
           </button>
-          {isAdmin && (
+          {isAdmin && (userRole === 'SUPER_ADMIN' || userRole === 'EDITOR') && (
             <button 
               className={`nav-tab ${currentView === 'training' ? 'active' : ''}`}
               onClick={() => setCurrentView('training')}
               style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}
             >
               ⚙️ Training Console
+            </button>
+          )}
+          {isAdmin && userRole === 'SUPER_ADMIN' && (
+            <button 
+              className={`nav-tab ${currentView === 'users' ? 'active' : ''}`}
+              onClick={() => setCurrentView('users')}
+              style={{ color: '#8b5cf6', fontWeight: 'bold' }}
+            >
+              👥 Users
             </button>
           )}
         </div>
@@ -582,6 +666,63 @@ function App() {
                   </button>
                 </div>
               </form>
+            </div>
+          </section>
+        )}
+        
+        {currentView === 'users' && isAdmin && userRole === 'SUPER_ADMIN' && (
+          <section>
+            <div className="glass-panel" style={{ maxWidth: '800px', margin: '0 auto' }}>
+              <h2 style={{ marginBottom: '1.5rem', color: '#8b5cf6' }}>User Management</h2>
+              
+              <form onSubmit={handleCreateUser} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', alignItems: 'flex-end' }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Username</label>
+                  <input type="text" className="input-field" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Password</label>
+                  <input type="password" className="input-field" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem' }}>Role</label>
+                  <select className="input-field" value={newUserRole} onChange={(e) => setNewUserRole(e.target.value)}>
+                    <option value="VIEWER">VIEWER</option>
+                    <option value="EDITOR">EDITOR</option>
+                    <option value="SUPER_ADMIN">SUPER_ADMIN</option>
+                  </select>
+                </div>
+                <button type="submit" className="btn" style={{ padding: '0.75rem 1.5rem', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)' }}>Add User</button>
+              </form>
+
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersList.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ fontWeight: 'bold' }}>{u.username}</td>
+                      <td>
+                        <span style={{ 
+                          padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem',
+                          background: u.role === 'SUPER_ADMIN' ? 'rgba(139, 92, 246, 0.2)' : u.role === 'EDITOR' ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                          color: u.role === 'SUPER_ADMIN' ? '#8b5cf6' : u.role === 'EDITOR' ? '#10b981' : '#9ca3af'
+                        }}>{u.role}</span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        {u.username !== 'admin' && (
+                          <button onClick={() => handleDeleteUser(u.id)} className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', color: '#ef4444' }}>Delete</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         )}

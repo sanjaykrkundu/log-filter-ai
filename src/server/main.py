@@ -20,7 +20,7 @@ from src.trainer.orchestrator import TrainerOrchestrator
 from src.server.analytics import AnalyticsManager
 from sqlalchemy.orm import Session
 from src.server.database import get_db, init_db, User, Issue
-from src.server.auth import verify_password, get_password_hash, create_access_token, get_current_admin
+from src.server.auth import verify_password, get_password_hash, create_access_token, get_current_super_admin, get_current_editor
 
 TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
 WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
@@ -123,7 +123,7 @@ async def login(req: LoginRequest, db: Session = Depends(get_db)):
         return {"status": "error", "message": "Invalid username or password"}
         
     access_token = create_access_token(data={"sub": user.username})
-    return {"status": "success", "token": access_token}
+    return {"status": "success", "token": access_token, "role": user.role}
 
 @app.post("/api/issues/analyze")
 async def analyze_issue(req: AnalyzeRequest):
@@ -172,7 +172,7 @@ async def train_ai(
     snippet: str = Form(""),
     meaning: str = Form(""),
     files: List[UploadFile] = File(default=[]),
-    admin: User = Depends(get_current_admin)
+    admin: User = Depends(get_current_editor)
 ):
     if issue_id == "AUTO-GENERATE" or not issue_id.strip():
         issue_id = f"ISSUE-{str(uuid.uuid4())[:8].upper()}"
@@ -204,3 +204,34 @@ async def train_ai(
         return {"status": "success", "message": f"Successfully trained AI for {issue_id}!", "data": result}
     except Exception as e:
         return {"status": "error", "message": f"Training failed: {str(e)}"}
+
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str
+
+@app.get("/api/users")
+async def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_super_admin)):
+    users = db.query(User).all()
+    return {"status": "success", "users": [{"id": u.id, "username": u.username, "role": u.role} for u in users]}
+
+@app.post("/api/users")
+async def create_user(req: CreateUserRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_super_admin)):
+    existing = db.query(User).filter(User.username == req.username).first()
+    if existing:
+        return {"status": "error", "message": "Username already exists"}
+    new_user = User(username=req.username, hashed_password=get_password_hash(req.password), role=req.role)
+    db.add(new_user)
+    db.commit()
+    return {"status": "success", "message": f"User {req.username} created"}
+
+@app.delete("/api/users/{user_id}")
+async def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_super_admin)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        return {"status": "error", "message": "User not found"}
+    if user.username == "admin":
+        return {"status": "error", "message": "Cannot delete default admin"}
+    db.delete(user)
+    db.commit()
+    return {"status": "success"}

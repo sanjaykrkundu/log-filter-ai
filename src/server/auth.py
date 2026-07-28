@@ -31,7 +31,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
-def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     token = credentials.credentials
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -49,3 +49,13 @@ def get_current_admin(credentials: HTTPAuthorizationCredentials = Depends(securi
     if user is None:
         raise credentials_exception
     return user
+
+def get_current_super_admin(current_user: User = Depends(get_current_user)):
+    if current_user.role != "SUPER_ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires SUPER_ADMIN role")
+    return current_user
+
+def get_current_editor(current_user: User = Depends(get_current_user)):
+    if current_user.role not in ["SUPER_ADMIN", "EDITOR"]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Requires EDITOR role")
+    return current_user
