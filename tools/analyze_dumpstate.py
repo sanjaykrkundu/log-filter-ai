@@ -1,8 +1,10 @@
 import sys
 import os
 import argparse
+from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+load_dotenv()
 
 from src.analyzer.runtime_analyzer import RuntimeAnalyzer
 from src.report.report_gen import ReportGenerator

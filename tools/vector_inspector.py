@@ -1,8 +1,10 @@
 import sys
 import os
 import argparse
+from dotenv import load_dotenv
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+load_dotenv()
 
 from src.vectors.vector_db import VectorDB
 from src.vectors.embedding_gen import EmbeddingGenerator
