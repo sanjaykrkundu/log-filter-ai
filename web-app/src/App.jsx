@@ -8,12 +8,19 @@ function App() {
   const [isFetching, setIsFetching] = useState(false);
   const [results, setResults] = useState([]);
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [textSize, setTextSize] = useState(() => localStorage.getItem('textSize') || 'medium');
 
   // Apply theme and persist to localStorage
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  // Apply text size and persist
+  useEffect(() => {
+    document.documentElement.setAttribute('data-text-size', textSize);
+    localStorage.setItem('textSize', textSize);
+  }, [textSize]);
 
   // Persist search preferences
   useEffect(() => {
@@ -133,8 +140,17 @@ function App() {
           </form>
         </div>
 
-        {/* Right: Theme Toggle */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Right: Theme Toggle & Text Size */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1rem' }}>
+          
+          {/* Text Size Controller */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'rgba(0,0,0,0.05)', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.25rem', marginRight: '0.25rem' }}>Size:</span>
+            <button className={`nav-tab ${textSize === 'small' ? 'active' : ''}`} onClick={() => setTextSize('small')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.7rem' }}>S</button>
+            <button className={`nav-tab ${textSize === 'medium' ? 'active' : ''}`} onClick={() => setTextSize('medium')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.8rem' }}>M</button>
+            <button className={`nav-tab ${textSize === 'large' ? 'active' : ''}`} onClick={() => setTextSize('large')} style={{ padding: '0.25rem 0.5rem', minWidth: '28px', fontSize: '0.9rem' }}>L</button>
+          </div>
+
           <button onClick={toggleTheme} className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.875rem' }}>
             {theme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
