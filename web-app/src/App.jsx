@@ -62,16 +62,30 @@ function App() {
     setTheme(prev => prev === 'dark' ? 'light' : 'dark');
   };
 
-  const handleAdminToggle = () => {
+  const handleAdminToggle = async () => {
     if (isAdmin) {
       setIsAdmin(false);
+      localStorage.removeItem('adminToken');
       if (currentView === 'training') setCurrentView('fetcher');
     } else {
-      const pwd = prompt("Enter admin password to access Training Console:");
-      if (pwd === 'admin123') {
-        setIsAdmin(true);
-      } else if (pwd !== null) {
-        alert("Incorrect password.");
+      const pwd = prompt("Enter admin password to access Training Console (Username defaults to 'admin'):");
+      if (pwd !== null) {
+        try {
+          const res = await fetch('http://localhost:8000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: 'admin', password: pwd })
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+             localStorage.setItem('adminToken', data.token);
+             setIsAdmin(true);
+          } else {
+             alert(data.message);
+          }
+        } catch (e) {
+          alert("Failed to connect to login server.");
+        }
       }
     }
   };
@@ -170,17 +184,31 @@ function App() {
         }
       }
 
+      const token = localStorage.getItem('adminToken');
       const response = await fetch('http://localhost:8000/api/train', {
         method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
+      
+      if (response.status === 401) {
+          alert("Session expired or invalid token. Please log in again.");
+          setIsAdmin(false);
+          localStorage.removeItem('adminToken');
+          setCurrentView('fetcher');
+          return;
+      }
+      
       const data = await response.json();
-      alert(data.message);
-      setTrainSnippet('');
-      setTrainMeaning('');
-      setTrainTitle('');
-      setTrainFiles(null);
-      // Reset file input visually if needed, though simple state clear handles logic.
+      if (data.status === 'success') {
+          alert(data.message);
+          setTrainSnippet('');
+          setTrainMeaning('');
+          setTrainTitle('');
+          setTrainFiles(null);
+      } else {
+          alert(data.message);
+      }
     } catch (err) {
       console.error("Failed to submit training data", err);
       alert("Failed to connect to backend server.");

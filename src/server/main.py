@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Form, File, UploadFile
+from fastapi import FastAPI, Form, File, UploadFile, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
@@ -17,12 +17,30 @@ if PROJECT_ROOT not in sys.path:
 from src.analyzer.runtime_analyzer import RuntimeAnalyzer
 from src.trainer.orchestrator import TrainerOrchestrator
 from src.server.analytics import AnalyticsManager
+from sqlalchemy.orm import Session
+from src.server.database import get_db, init_db, User, Issue
+from src.server.auth import verify_password, get_password_hash, create_access_token, get_current_admin
 
 TRAINED_DIR = os.path.join(PROJECT_ROOT, "trained")
 WORKSPACE_DIR = os.path.join(PROJECT_ROOT, "workspace")
 INCOMING_DIR = os.path.join(PROJECT_ROOT, "incoming")
 
 app = FastAPI(title="Log Filter AI Server")
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+    db = next(get_db())
+    admin = db.query(User).filter(User.username == "admin").first()
+    if not admin:
+        admin = User(username="admin", hashed_password=get_password_hash("admin123"))
+        db.add(admin)
+        
+    if db.query(Issue).count() == 0:
+        db.add(Issue(id="ISSUE-8492", title="Camera Service Crash on Resume", component="Camera", status="Open"))
+        db.add(Issue(id="ISSUE-9103", title="NullPointerException in ISP Node 5", component="ISP", status="Investigating"))
+        
+    db.commit()
 
 # Configure CORS for React frontend
 app.add_middleware(
@@ -41,21 +59,30 @@ class FetchRequest(BaseModel):
 class AnalyzeRequest(BaseModel):
     issue_id: str
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
 # Endpoints
 @app.post("/api/issues/fetch")
-async def fetch_issues(req: FetchRequest):
-    # Simulate network delay for fetching from external bug tracker
-    await asyncio.sleep(1.5)
-    
-    mock_data = [
-        {"id": "ISSUE-8492", "title": "Camera Service Crash on Resume", "component": "Camera", "status": "Open"},
-        {"id": "ISSUE-9103", "title": "NullPointerException in ISP Node 5", "component": "ISP", "status": "Investigating"}
-    ]
-    
-    if req.type == 'issueId':
-        return [mock_data[0]]
+async def fetch_issues(req: FetchRequest, db: Session = Depends(get_db)):
+    if req.type == 'issueId' and req.query:
+        issues = db.query(Issue).filter(Issue.id.like(f"%{req.query}%")).all()
+    elif req.type == 'group' and req.query:
+        issues = db.query(Issue).filter(Issue.component.like(f"%{req.query}%")).all()
     else:
-        return mock_data
+        issues = db.query(Issue).all()
+        
+    return [{"id": i.id, "title": i.title, "component": i.component, "status": i.status} for i in issues]
+
+@app.post("/api/login")
+async def login(req: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == req.username).first()
+    if not user or not verify_password(req.password, user.hashed_password):
+        return {"status": "error", "message": "Invalid username or password"}
+        
+    access_token = create_access_token(data={"sub": user.username})
+    return {"status": "success", "token": access_token}
 
 @app.post("/api/issues/analyze")
 async def analyze_issue(req: AnalyzeRequest):
@@ -102,7 +129,8 @@ async def train_ai(
     component: Optional[str] = Form(None),
     snippet: str = Form(""),
     meaning: str = Form(""),
-    files: List[UploadFile] = File(default=[])
+    files: List[UploadFile] = File(default=[]),
+    admin: User = Depends(get_current_admin)
 ):
     if issue_id == "AUTO-GENERATE" or not issue_id.strip():
         issue_id = f"ISSUE-{str(uuid.uuid4())[:8].upper()}"
