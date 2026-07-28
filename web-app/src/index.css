@@ -10,17 +10,16 @@
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --status-bar-bg: rgba(0,0,0,0.1);
-  --table-font-size: 0.875rem;
 }
 
 [data-text-size='small'] {
-  --table-font-size: 0.75rem;
+  font-size: 14px;
 }
 [data-text-size='medium'] {
-  --table-font-size: 0.875rem;
+  font-size: 16px;
 }
 [data-text-size='large'] {
-  --table-font-size: 1rem;
+  font-size: 18px;
 }
 
 [data-theme='light'] {
@@ -275,7 +274,10 @@ p {
 .data-table th, .data-table td {
   padding: clamp(0.5rem, 2vh, 1rem) 1rem;
   border-bottom: 1px solid var(--border-color);
-  font-size: var(--table-font-size);
+}
+
+.data-table td {
+  font-size: 0.875rem;
 }
 
 .data-table th {
