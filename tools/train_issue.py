@@ -55,10 +55,9 @@ def main():
     
     # 3. Generate Template via LLM
     print("Generating template via LLM...")
-    llm_gen = LLMTemplateGenerator()
+    llm_gen = LLMTemplateGenerator(trained_base)
     template = llm_gen.generate_template(error_window=error_window_str, hint=hint)
     
-    # Override issue name if the LLM hallucinated a weird one, or let LLM decide
     # For now, we force the folder name to keep it organized
     template["issue_name"] = issue_name
     

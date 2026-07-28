@@ -11,6 +11,7 @@ load_dotenv(os.path.join(project_root, '.env'))
 
 from src.analyzer.runtime_analyzer import RuntimeAnalyzer
 from src.analyzer.learning_engine import LearningEngine
+from src.analyzer.knowledge_retriever import KnowledgeRetriever
 
 st.set_page_config(page_title="Log Filter AI", layout="wide")
 
@@ -24,7 +25,7 @@ os.makedirs(incoming_dir, exist_ok=True)
 
 st.title("Log Filter AI - Dashboard")
 
-tab1, tab2 = st.tabs(["Analyze Dumpstate", "Learning Hub"])
+tab1, tab2, tab3 = st.tabs(["Analyze Dumpstate", "Learning Hub", "Knowledge Base"])
 
 with tab1:
     st.header("Upload Dumpstate for Analysis")
@@ -87,3 +88,43 @@ with tab2:
             st.info("No pending suggestions.")
     else:
         st.info("No suggestions file found.")
+
+with tab3:
+    st.header("Domain Knowledge Base")
+    st.write("Teach the AI what proprietary log snippets mean so it can understand them during analysis.")
+    
+    kr = KnowledgeRetriever(trained_dir)
+    
+    # Add new entry
+    with st.form("add_kb_entry"):
+        st.subheader("Add / Update Entry")
+        col1, col2 = st.columns([1, 2])
+        with col1:
+            log_pattern = st.text_input("Log Snippet (e.g., 'CamX: node 5 stalled')")
+        with col2:
+            meaning = st.text_input("Meaning (e.g., 'ISP node 5 hung due to memory starvation')")
+            
+        if st.form_submit_button("Save Entry"):
+            if log_pattern and meaning:
+                kr.add_entry(log_pattern, meaning)
+                st.success(f"Added knowledge for: '{log_pattern}'")
+            else:
+                st.error("Both fields are required.")
+                
+    # View/Delete entries
+    st.subheader("Existing Knowledge")
+    entries = kr.get_all()
+    if not entries:
+        st.info("Knowledge base is empty.")
+    else:
+        for idx, entry in enumerate(entries):
+            col1, col2, col3 = st.columns([2, 4, 1])
+            with col1:
+                st.code(entry["log_pattern"], language="text")
+            with col2:
+                st.write(entry["meaning"])
+            with col3:
+                if st.button("Delete", key=f"del_kb_{idx}"):
+                    kr.remove_entry(entry["log_pattern"])
+                    st.rerun()
+

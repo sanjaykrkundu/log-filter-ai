@@ -2,6 +2,7 @@ import os
 import json
 import google.generativeai as genai
 from typing import Dict, Any, List
+from src.analyzer.knowledge_retriever import KnowledgeRetriever
 
 class RootCauseAnalyzer:
     """
@@ -9,7 +10,10 @@ class RootCauseAnalyzer:
     and returns a confidence score. Uses Agentic RAG via Function Calling to retrieve more context.
     """
     
-    def __init__(self, api_key: str = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, trained_dir: str, api_key: str = None, model: str = "gemini-1.5-flash"):
+        self.trained_dir = trained_dir
+        self.kr = KnowledgeRetriever(self.trained_dir)
+        
         api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set.")
@@ -22,6 +26,10 @@ class RootCauseAnalyzer:
         for i, t in enumerate(matching_templates):
             context += f"Template {i+1}:\n"
             context += json.dumps(t, indent=2) + "\n\n"
+            
+        kb_context = self.kr.get_context_for_window(error_window)
+        if kb_context:
+            context += f"{kb_context}\n"
             
         context += f"### Initial Error Window\n{error_window}\n"
         return context

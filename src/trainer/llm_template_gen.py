@@ -2,6 +2,7 @@ import os
 import json
 import google.generativeai as genai
 from typing import Dict, Any
+from src.analyzer.knowledge_retriever import KnowledgeRetriever
 
 class LLMTemplateGenerator:
     """
@@ -9,7 +10,10 @@ class LLMTemplateGenerator:
     This class handles the prompt generation and interfaces with the Google Gemini API.
     """
     
-    def __init__(self, api_key: str = None, model: str = "gemini-1.5-flash"):
+    def __init__(self, trained_dir: str, api_key: str = None, model: str = "gemini-1.5-flash"):
+        self.trained_dir = trained_dir
+        self.kr = KnowledgeRetriever(self.trained_dir)
+        
         api_key = api_key or os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable is not set.")
@@ -21,10 +25,13 @@ class LLMTemplateGenerator:
         """
         Constructs the prompt for the LLM to generate the pattern template.
         """
+        kb_context = self.kr.get_context_for_window(error_window)
+        
         prompt = f"""
 You are an expert Android Camera system debugger.
 Analyze the following error window from an Android logcat and create a structured JSON template representing this issue.
 
+{kb_context}
 ### Error Window:
 ```
 {error_window}

@@ -44,7 +44,7 @@ class RuntimeAnalyzer:
         # 3. Vector Similarity & Context Building
         vdb = VectorDB(self.db_path)
         emb_gen = EmbeddingGenerator()
-        rc_analyzer = RootCauseAnalyzer()
+        rc_analyzer = RootCauseAnalyzer(self.trained_dir)
         
         findings = []
         for error in errors:
