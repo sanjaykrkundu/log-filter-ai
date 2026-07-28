@@ -14,12 +14,18 @@
 
 [data-text-size='small'] {
   font-size: 14px;
+  --table-padding-y: clamp(0.25rem, 1.5vh, 0.5rem);
+  --table-padding-x: 0.75rem;
 }
 [data-text-size='medium'] {
   font-size: 16px;
+  --table-padding-y: clamp(0.5rem, 2vh, 0.75rem);
+  --table-padding-x: 1rem;
 }
 [data-text-size='large'] {
   font-size: 18px;
+  --table-padding-y: clamp(0.75rem, 2.5vh, 1.25rem);
+  --table-padding-x: 1.25rem;
 }
 
 [data-theme='light'] {
@@ -272,7 +278,7 @@ p {
 }
 
 .data-table th, .data-table td {
-  padding: clamp(0.5rem, 2vh, 1rem) 1rem;
+  padding: var(--table-padding-y, 0.75rem) var(--table-padding-x, 1rem);
   border-bottom: 1px solid var(--border-color);
 }
 
