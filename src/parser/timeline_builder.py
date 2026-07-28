@@ -36,3 +36,43 @@ class TimelineBuilder:
                         "raw_line": line.strip()
                     })
         return timeline
+
+    def build_sessions(self) -> list[dict]:
+        """
+        Groups the timeline into logical sessions based on start and end markers.
+        """
+        timeline = self.build_timeline()
+        sessions = []
+        current_session = None
+        
+        # Simple heuristic for camera sessions
+        start_markers = ["opening camera", "starting", "connect"]
+        end_markers = ["closing camera", "disconnect", "release"]
+        
+        for event in timeline:
+            msg = event["message"].lower()
+            
+            if any(m in msg for m in start_markers):
+                if current_session is None:
+                    current_session = {
+                        "start_event": event,
+                        "end_event": None,
+                        "events": [event]
+                    }
+                else:
+                    current_session["events"].append(event)
+            elif any(m in msg for m in end_markers):
+                if current_session is not None:
+                    current_session["events"].append(event)
+                    current_session["end_event"] = event
+                    sessions.append(current_session)
+                    current_session = None
+            else:
+                if current_session is not None:
+                    current_session["events"].append(event)
+                    
+        # If a session never closed, it might be a silent crash or stuck state
+        if current_session is not None:
+            sessions.append(current_session)
+            
+        return sessions

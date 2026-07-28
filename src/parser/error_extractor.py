@@ -47,4 +47,26 @@ class ErrorExtractor:
                     "context": "".join(window).strip()
                 })
                 
+        # 2. Check for behavioral anomalies (e.g., unclosed sessions)
+        try:
+            from src.parser.timeline_builder import TimelineBuilder
+            tb = TimelineBuilder(self.logcat_path)
+            sessions = tb.build_sessions()
+            for session in sessions:
+                if session["end_event"] is None:
+                    start_line = session["start_event"]["line_number"]
+                    error_msg = f"Behavioral Anomaly: Session started at line {start_line} but never closed."
+                    
+                    events = session["events"]
+                    context_events = events[-20:] # Last 20 lines of the stuck session
+                    context_str = "\n".join([e["raw_line"] for e in context_events])
+                    
+                    error_windows.append({
+                        "line_number": events[-1]["line_number"],
+                        "error_line": error_msg,
+                        "context": context_str
+                    })
+        except Exception:
+            pass # Fallback if timeline parsing fails
+            
         return error_windows
