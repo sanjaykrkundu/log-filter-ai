@@ -65,8 +65,12 @@ class RuntimeAnalyzer:
                     if template:
                         matching_templates.append(template)
                         
-            # 4. LLM Classification
-            analysis = rc_analyzer.analyze(error_text, matching_templates)
+            # 4. LLM Classification (Agentic RAG)
+            analysis = rc_analyzer.analyze(
+                error_window=error_text, 
+                matching_templates=matching_templates, 
+                logcat_path=logcat_path
+            )
             
             findings.append({
                 "line_number": error["line_number"],
