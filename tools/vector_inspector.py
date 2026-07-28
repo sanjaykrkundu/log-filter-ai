@@ -8,7 +8,6 @@ load_dotenv()
 
 from src.vectors.vector_db import VectorDB
 from src.vectors.embedding_gen import EmbeddingGenerator
-from src.vectors.similarity import SimilarityEngine
 
 def main():
     parser = argparse.ArgumentParser(description="Inspect vectors and test similarity search.")
@@ -31,7 +30,7 @@ def main():
         generator = EmbeddingGenerator()
         query_vec = generator.generate_embedding(args.query)
         
-        results = SimilarityEngine.search(query_vec, records, top_k=3)
+        results = db.search(query_vec, top_k=3)
         
         print("\n--- Top Matches ---")
         for i, (record, score) in enumerate(results):

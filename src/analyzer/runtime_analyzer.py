@@ -4,7 +4,6 @@ from src.parser.camera_extractor import CameraExtractor
 from src.parser.error_extractor import ErrorExtractor
 from src.vectors.embedding_gen import EmbeddingGenerator
 from src.vectors.vector_db import VectorDB
-from src.vectors.similarity import SimilarityEngine
 from src.analyzer.root_cause import RootCauseAnalyzer
 
 class RuntimeAnalyzer:
@@ -44,7 +43,6 @@ class RuntimeAnalyzer:
             
         # 3. Vector Similarity & Context Building
         vdb = VectorDB(self.db_path)
-        records = vdb.get_all_vectors()
         emb_gen = EmbeddingGenerator()
         rc_analyzer = RootCauseAnalyzer()
         
@@ -53,8 +51,8 @@ class RuntimeAnalyzer:
             error_text = error["context"]
             error_vec = emb_gen.generate_embedding(error_text)
             
-            # Find top matches
-            matches = SimilarityEngine.search(error_vec, records, top_k=2)
+            # Find top matches using FAISS
+            matches = vdb.search(error_vec, top_k=2)
             
             # Load actual JSON templates for the LLM
             matching_templates = []
