@@ -5,6 +5,9 @@ from src.parser.error_extractor import ErrorExtractor
 from src.vectors.embedding_gen import EmbeddingGenerator
 from src.vectors.vector_db import VectorDB
 from src.analyzer.root_cause import RootCauseAnalyzer
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class RuntimeAnalyzer:
     """
@@ -27,6 +30,7 @@ class RuntimeAnalyzer:
         """
         Executes the analysis pipeline and returns a structured result.
         """
+        logger.debug(f"Starting analysis for dumpstate: {dumpstate_path}")
         # 1. Extract Camera Logs
         base_name = os.path.basename(dumpstate_path)
         logcat_path = os.path.join(self.workspace_dir, "extracted_logs", f"{base_name}_camera_logcat.txt")
@@ -38,7 +42,10 @@ class RuntimeAnalyzer:
         error_extractor = ErrorExtractor(logcat_path)
         errors = error_extractor.extract_errors(context_lines=5)
         
+        logger.debug(f"Extracted {len(errors)} error windows from {logcat_path}")
+        
         if not errors:
+            logger.info(f"No obvious camera errors found in {dumpstate_path}")
             return {"status": "success", "message": "No obvious camera errors found.", "findings": []}
             
         # 3. Vector Similarity & Context Building
@@ -57,6 +64,7 @@ class RuntimeAnalyzer:
             # Load actual JSON templates for the LLM
             matching_templates = []
             for record, score in matches:
+                logger.debug(f"FAISS match: {record['issue_id']} (score: {score:.4f})")
                 # We only pass templates with a decent similarity score to save tokens
                 if score > 0.1: 
                     template = self._load_template(record["issue_id"])

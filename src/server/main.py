@@ -11,6 +11,9 @@ import sys
 import uuid
 import shutil
 import json
+from src.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 # Setup paths and imports
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -70,8 +73,10 @@ def on_startup():
 
 async def issue_poller_task():
     import random
+    logger.info("Background issue poller task started.")
     while True:
         await asyncio.sleep(app_config["intervals"]["poll_ms"] / 1000.0)
+        logger.debug("Poller woke up. Attempting to generate new mock issue...")
         db = next(get_db())
         try:
             editors = db.query(User).filter(User.role.in_(["EDITOR", "SUPER_ADMIN"])).all()
@@ -82,10 +87,11 @@ async def issue_poller_task():
                 new_issue = Issue(id=issue_id, title=f"Auto-generated mock issue", component=random.choice(components), status="Open", assignee=assignee)
                 db.add(new_issue)
                 db.commit()
+                logger.debug(f"Successfully generated new issue {issue_id} assigned to {assignee}")
                 # Inform clients of a new issue
                 asyncio.create_task(manager.broadcast('{"type": "new_issue"}'))
         except Exception as e:
-            pass
+            logger.error(f"Error in issue poller task: {e}")
         finally:
             db.close()
 
