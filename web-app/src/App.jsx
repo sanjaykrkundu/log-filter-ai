@@ -152,18 +152,16 @@ function App() {
         fontSize: '0.75rem',
       }}>
         {/* Left: Navigation */}
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.05)', padding: '0.25rem', borderRadius: '8px' }}>
           <button 
-            className={`btn ${currentView === 'fetcher' ? '' : 'btn-secondary'}`}
+            className={`nav-tab ${currentView === 'fetcher' ? 'active' : ''}`}
             onClick={() => setCurrentView('fetcher')}
-            style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', borderRadius: '4px' }}
           >
             Issue Fetcher
           </button>
           <button 
-            className={`btn ${currentView === 'analytics' ? '' : 'btn-secondary'}`}
+            className={`nav-tab ${currentView === 'analytics' ? 'active' : ''}`}
             onClick={() => setCurrentView('analytics')}
-            style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem', borderRadius: '4px' }}
           >
             Analytics Data
           </button>
