@@ -21,25 +21,42 @@ function App() {
   };
   const hoursSaved = (stats.totalAnalyzed * 1.5).toLocaleString(); // 1.5 hours per issue
 
-  const handleFetch = (e) => {
+  const handleFetch = async (e) => {
     e.preventDefault();
     if (!query) return;
     
     setIsFetching(true);
     setResults([]);
     
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:8000/api/issues/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: activeTab, query })
+      });
+      const data = await response.json();
+      setResults(data);
+    } catch (err) {
+      console.error("Failed to fetch issues", err);
+      alert("Failed to connect to backend server.");
+    } finally {
       setIsFetching(false);
-      const mockData = [
-        { id: 'ISSUE-8492', title: 'Camera Service Crash on Resume', component: 'Camera', status: 'Open' },
-        { id: 'ISSUE-9103', title: 'NullPointerException in ISP Node 5', component: 'ISP', status: 'Investigating' }
-      ];
-      setResults(activeTab === 'issueId' ? [mockData[0]] : mockData);
-    }, 1500);
+    }
   };
 
-  const handleAnalyze = (id) => {
-    alert(`Handing off ${id} to Python Log Filter AI backend... (Feature coming soon)`);
+  const handleAnalyze = async (id) => {
+    try {
+      const response = await fetch('http://localhost:8000/api/issues/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issue_id: id })
+      });
+      const data = await response.json();
+      alert(data.message);
+    } catch (err) {
+      console.error("Failed to analyze issue", err);
+      alert("Failed to connect to backend server.");
+    }
   };
 
   return (
