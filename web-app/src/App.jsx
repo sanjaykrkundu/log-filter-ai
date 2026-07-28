@@ -82,6 +82,24 @@ function App() {
         </div>
       </header>
 
+      {/* Analytics Status Bar (Persistent) */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        gap: '3rem', 
+        padding: '0.75rem', 
+        backgroundColor: 'rgba(30, 41, 59, 0.5)', 
+        border: '1px solid var(--border-color)',
+        borderRadius: '8px',
+        marginBottom: '2rem',
+        fontSize: '0.875rem',
+        backdropFilter: 'blur(12px)'
+      }}>
+        <div><span style={{ color: 'var(--text-secondary)' }}>Total Analyzed: </span><strong style={{ color: 'var(--accent-color)', fontSize: '1rem' }}>{stats.totalAnalyzed.toLocaleString()}</strong></div>
+        <div><span style={{ color: 'var(--text-secondary)' }}>Success Rate: </span><strong style={{ fontSize: '1rem' }}>{stats.successRate}%</strong></div>
+        <div><span style={{ color: 'var(--text-secondary)' }}>Man Hours Saved: </span><strong style={{ color: '#10b981', fontSize: '1rem' }}>{hoursSaved}h</strong></div>
+      </div>
+
       {currentView === 'fetcher' && (
         <>
           <main className="glass-panel" style={{ marginBottom: '2rem' }}>
