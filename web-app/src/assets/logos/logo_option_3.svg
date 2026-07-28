@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#10b981" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="24" fill="transparent" />
+  
+  <!-- Shutter Polygon -->
+  <polygon points="60,10 110,35 110,85 60,110 10,85 10,35" fill="none" stroke="url(#g3)" stroke-width="4" />
+  
+  <!-- Funnel inside -->
+  <polygon points="30,40 90,40 70,80 50,80" fill="url(#g3)" opacity="0.3" />
+  
+  <!-- Log lines being filtered -->
+  <rect x="40" y="45" width="40" height="4" rx="2" fill="url(#g3)" />
+  <rect x="45" y="55" width="30" height="4" rx="2" fill="url(#g3)" />
+  <rect x="50" y="65" width="20" height="4" rx="2" fill="url(#g3)" />
+  
+  <!-- Core Node -->
+  <circle cx="60" cy="85" r="8" fill="url(#g3)" />
+</svg>
