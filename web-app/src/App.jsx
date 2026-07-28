@@ -147,7 +147,7 @@ function App() {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '0.5rem 2rem', 
-        backgroundColor: 'rgba(0,0,0,0.1)', 
+        backgroundColor: 'var(--status-bar-bg)', 
         borderBottom: '1px solid var(--border-color)',
         fontSize: '0.75rem',
       }}>

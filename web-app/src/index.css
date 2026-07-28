@@ -9,39 +9,70 @@
   --border-color: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --status-bar-bg: rgba(0,0,0,0.1);
 }
 
 [data-theme='light'] {
-  --bg-color: #f8fafc;
-  --bg-gradient: radial-gradient(circle at 50% -20%, #e0e7ff, #f8fafc 60%);
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --card-bg: rgba(255, 255, 255, 0.6);
-  --border-color: rgba(0, 0, 0, 0.1);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  --bg-color: #f9fafb;
+  --bg-gradient: none;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --card-bg: #ffffff;
+  --border-color: #e5e7eb;
+  --glass-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --status-bar-bg: #f3f4f6;
+}
+
+[data-theme='light'] body {
+  background-image: none;
+}
+
+[data-theme='light'] .glass-panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+[data-theme='light'] .data-table-container {
+  background: #ffffff;
 }
 
 [data-theme='light'] .data-table th {
-  background: rgba(241, 245, 249, 0.8);
-  color: #475569;
+  background: #f9fafb;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 [data-theme='light'] .data-table tbody tr:hover {
-  background-color: rgba(0, 0, 0, 0.02);
+  background-color: #f3f4f6;
+}
+
+[data-theme='light'] select.input-field {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%236b7280%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
 }
 
 [data-theme='light'] select.input-field option {
   background-color: #ffffff;
-  color: #0f172a;
+  color: #111827;
 }
 
 [data-theme='light'] .input-field {
-  background: rgba(255, 255, 255, 0.6);
-  color: var(--text-primary);
+  background: #ffffff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+[data-theme='light'] .input-field:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
 [data-theme='light'] .progress-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: #e5e7eb;
+}
+
+[data-theme='light'] .btn-secondary:hover {
+  background-color: #f3f4f6;
 }
 
 * {
